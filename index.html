@@ -3190,8 +3190,10 @@ function showGameplayBar(deltas = null, blinkDeltas = null) {
   bar.classList.add('active');
   document.body.classList.add('gameplay-bar-active');
   requestAnimationFrame(() => {
-    if (window.matchMedia('(max-width: 600px)').matches)
+    if (window.matchMedia('(max-width: 600px)').matches) {
       document.body.style.paddingTop = bar.offsetHeight + 'px';
+      window.scrollTo({ top: 0 });
+    }
   });
 }
 
