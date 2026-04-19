@@ -1,0 +1,3874 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sprint! — El juego del PM</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:       #0d1420;
+  --surface:  #151F30;
+  --surface2: #1a2c50;
+  --border:   #1e3870;
+  --text:     #8fc8d8;
+  --bright:   #cce8f0;
+  --muted:    #3d6070;
+  --accent:   #F5BE01;
+  --green:    #39d353;
+  --red:      #E3371E;
+  --red-fail: #b01818;
+  --yellow:   #FF7A48;
+  --blue:     #0593A2;
+  --purple:   #c084fc;
+  --font-px:  'Press Start 2P', monospace;
+  --font-vt:  'VT323', monospace;
+  --font-mono:'Share Tech Mono', monospace;
+}
+
+body {
+  background-color: var(--bg);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px),
+    radial-gradient(rgba(16,55,120,0.4) 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 32px 20px 80px;
+  transition: background-color 0.4s ease;
+}
+body.theme-gameover {
+  background-color: #180808;
+  background-image: radial-gradient(rgba(176,24,24,0.35) 1px, transparent 1px);
+}
+body.theme-weekend {
+  background-color: #180c04;
+  background-image: radial-gradient(rgba(255,122,72,0.5) 1px, transparent 1px);
+}
+body.theme-results {
+  background-color: #04101a;
+  background-image: radial-gradient(rgba(245,190,1,0.2) 1px, transparent 1px);
+}
+
+.wrap { width: 100%; max-width: 760px; }
+
+/* ── SCREENS ── */
+.screen { display: none; }
+.screen.active {
+  display: block;
+  animation: fadeUp 0.3s ease both;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── TYPOGRAPHY ── */
+h1 {
+  font-family: var(--font-px);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  color: var(--bright);
+  line-height: 1.5;
+  letter-spacing: 0.05em;
+}
+h2 {
+  font-family: var(--font-px);
+  font-size: 0.85rem;
+  color: var(--bright);
+  letter-spacing: 0.04em;
+}
+h3 {
+  font-family: var(--font-px);
+  font-size: 0.65rem;
+  color: var(--bright);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+p { line-height: 1.6; }
+
+.accent { color: var(--accent); }
+.muted  { color: var(--muted); font-size: 0.88rem; }
+
+/* ── PIXEL CARDS ── */
+.card {
+  background: var(--surface);
+  padding: 20px 24px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.7);
+  border-radius: 10px;
+}
+
+/* ── PIXEL BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: 2px solid;
+  font-family: var(--font-px);
+  font-size: 0.65rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.06s, box-shadow 0.06s;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.8);
+  border-radius: 8px;
+  white-space: nowrap;
+}
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 rgba(0,0,0,0.8);
+}
+.btn-primary {
+  background: var(--accent);
+  color: #111;
+  border-color: transparent;
+  box-shadow: 3px 3px 0 #7a6400;
+}
+.btn-primary:hover {
+  background: #ffd633;
+  box-shadow: 4px 4px 0 #7a6400;
+}
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--border);
+}
+.btn-ghost:hover { background: var(--surface2); }
+.btn-lg { padding: 13px 28px; font-size: 0.9rem; }
+
+/* ── TIMELINE ── */
+.sprint-timeline {
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+  background: var(--surface);
+  padding: 10px 16px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.6);
+}
+.tl-dots { display: flex; align-items: center; gap: 4px; flex: 1; }
+.tl-dot {
+  width: 10px; height: 10px;
+  background: var(--border);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%); /* pixel square */
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+.tl-dot.done    { background: var(--green); }
+.tl-dot.current { background: var(--accent); transform: scale(1.4); }
+.tl-sep { width: 2px; height: 14px; background: var(--border); margin: 0 6px; }
+.tl-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  margin-left: 14px;
+  white-space: nowrap;
+}
+
+/* ── METRICS ── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.metric {
+  background: var(--surface);
+  padding: 11px 14px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+  border-radius: 8px;
+}
+.metric.metric-failed {
+  background: #b01818;
+}
+.metric.metric-warn {
+  background: #bf5416;
+}
+@keyframes metric-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.65; }
+}
+.metric.metric-alert {
+  background: #b01818;
+  animation: metric-pulse 1.4s ease-in-out infinite;
+}
+.metric.metric-good {
+  background: #1a6628;
+}
+.metric.metric-warn .metric-name,
+.metric.metric-alert .metric-name,
+.metric.metric-failed .metric-name,
+.metric.metric-good .metric-name { color: rgba(255,255,255,0.75); }
+.metric.metric-warn .metric-desc,
+.metric.metric-alert .metric-desc,
+.metric.metric-failed .metric-desc,
+.metric.metric-good .metric-desc { color: rgba(255,255,255,0.6); }
+.metric.metric-warn .metric-delta,
+.metric.metric-alert .metric-delta,
+.metric.metric-failed .metric-delta,
+.metric.metric-good .metric-delta { color: #fff; }
+.metric.metric-warn .metric-delta.delta-pos,
+.metric.metric-alert .metric-delta.delta-pos,
+.metric.metric-failed .metric-delta.delta-pos,
+.metric.metric-good .metric-delta.delta-pos { text-shadow: 0 0 8px rgba(57,211,83,1); }
+.metric.metric-warn .metric-delta.delta-neg,
+.metric.metric-alert .metric-delta.delta-neg,
+.metric.metric-failed .metric-delta.delta-neg,
+.metric.metric-good .metric-delta.delta-neg { text-shadow: 0 0 8px rgba(227,55,30,1); }
+.metric.metric-warn .metric-seg.filled,
+.metric.metric-alert .metric-seg.filled,
+.metric.metric-failed .metric-seg.filled,
+.metric.metric-good .metric-seg.filled { background: rgba(255,255,255,0.9) !important; border-color: transparent; }
+.metric.metric-warn .metric-seg:not(.filled),
+.metric.metric-alert .metric-seg:not(.filled),
+.metric.metric-failed .metric-seg:not(.filled),
+.metric.metric-good .metric-seg:not(.filled) { background: rgba(0,0,0,0.25); border-color: transparent; }
+.metric-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 7px;
+}
+.metric-name {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.metric-track {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 10px;
+}
+.metric-seg {
+  flex: 1;
+  height: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  transition: background 0.4s;
+  border-radius: 2px;
+}
+.metric-seg.filled { border-color: transparent; }
+
+@keyframes seg-blink-add {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.7; background: var(--accent); }
+}
+@keyframes seg-blink-remove {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.15; }
+}
+.metric-seg.seg-blink-add    { animation: seg-blink-add    0.28s ease-in-out 3; }
+.metric-seg.seg-blink-remove { animation: seg-blink-remove 0.28s ease-in-out 3; }
+.metric-seg.zero-gap { margin-left: 4px; }
+.metric-desc {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.metric[data-tooltip] { cursor: help; position: relative; }
+.metric[data-tooltip]::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.6);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  line-height: 1.55;
+  padding: 9px 12px;
+  z-index: 500;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.metric[data-tooltip]:hover::after { opacity: 1; }
+
+/* ── TAGS ── */
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid;
+  border-radius: 5px;
+}
+.tag-red    { background: rgba(227,55,30,0.1);   color: var(--red);    border-color: rgba(227,55,30,0.4);  --tag-color: var(--red); }
+.tag-yellow { background: rgba(255,122,72,0.1);  color: var(--yellow); border-color: rgba(255,122,72,0.4); --tag-color: var(--yellow); }
+.tag-blue   { background: rgba(5,147,162,0.1);   color: var(--blue);   border-color: rgba(5,147,162,0.4);  --tag-color: var(--blue); }
+.tag-purple { background: rgba(192,132,252,0.1); color: var(--purple); border-color: rgba(192,132,252,0.4); --tag-color: var(--purple); }
+.tag-green  { background: rgba(57,211,83,0.1);   color: var(--green);  border-color: rgba(57,211,83,0.4);  --tag-color: var(--green); }
+.tag-slate  { background: rgba(26,44,80,0.6);    color: var(--muted);  border-color: var(--border);         --tag-color: var(--muted); }
+
+/* ══════════════════════════════
+   PANTALLA: TÍTULO
+   ══════════════════════════════ */
+.title-screen {
+  text-align: center;
+  padding: 50px 20px 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 130px);
+}
+.title-eyebrow {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
+  border: 1px solid rgba(245,190,1,0.4);
+  padding: 5px 16px;
+  background: rgba(245,190,1,0.07);
+  border-radius: 6px;
+  margin-bottom: 28px;
+}
+.title-sub {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--muted);
+  max-width: 480px;
+  margin: 20px 0 36px;
+  line-height: 1.7;
+}
+
+.title-note {
+  margin-top: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+}
+
+/* blink cursor */
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+.blink { animation: blink 1s step-end infinite; color: var(--accent); }
+
+/* ── LOGO PERSISTENTE ── */
+.game-copyright {
+  position: fixed;
+  bottom: 12px;
+  right: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+  opacity: 0.5;
+  z-index: 100;
+  letter-spacing: 0.05em;
+  user-select: none;
+  pointer-events: none;
+}
+
+.gameplay-bar {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 90;
+  background: var(--bg);
+  padding: 0 20px;
+}
+
+.game-logo {
+  position: fixed;
+  top: 16px;
+  left: 20px;
+  font-family: var(--font-px);
+  font-size: 0.65rem;
+  color: var(--muted);
+  z-index: 100;
+  letter-spacing: 0.05em;
+  user-select: none;
+  pointer-events: none;
+}
+
+.sprint-counter {
+  position: fixed;
+  top: 34px;
+  left: 20px;
+  font-family: var(--font-mono);
+  font-size: 0.55rem;
+  color: var(--accent);
+  z-index: 100;
+  letter-spacing: 0.06em;
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+
+/* ══════════════════════════════
+   PANTALLA: SPRINT BOARD
+   ══════════════════════════════ */
+.sprint-header { margin-bottom: 20px; }
+.sprint-header p { color: var(--muted); margin-top: 6px; font-size: 1.05rem; }
+
+.stories-list { margin-bottom: 20px; }
+.story-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  background: var(--surface);
+  margin-bottom: 6px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+}
+.story-left { display: flex; align-items: flex-start; gap: 12px; }
+.story-pts {
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  padding: 3px 8px;
+  min-width: 28px;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+.story-name {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--bright);
+  margin-bottom: 4px;
+}
+.story-desc {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.5;
+  max-width: 480px;
+}
+.story-assignee {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+}
+.story-total {
+  text-align: right;
+  padding: 6px 14px 0;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.story-total strong { color: var(--accent); }
+
+/* ══════════════════════════════
+   PANTALLA: DÍA NORMAL
+   ══════════════════════════════ */
+.day-card {
+  background: var(--surface);
+  padding: 22px 26px;
+  margin-bottom: 18px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
+  border-radius: 0 10px 10px 10px;
+}
+.day-card.card-red    { background: #5a0e0e; }
+.day-card.card-yellow { background: #6b2e0a; }
+.day-card.card-blue   { background: #063440; }
+.day-card.card-green  { background: #0d3318; }
+.day-card.card-purple { background: #2e1650; }
+.day-card.card-slate  { background: var(--surface2); }
+.day-icon { font-size: 2.8rem; margin-bottom: 14px; }
+.day-title {
+  font-family: var(--font-px);
+  font-size: 0.78rem;
+  color: var(--bright);
+  margin-bottom: 12px;
+}
+.day-summary {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 18px;
+}
+[class*="card-"] .day-summary { color: #fff; }
+[class*="card-"] .day-title   { color: #fff; }
+.day-effects {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.day-effect-pill {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+}
+
+/* ══════════════════════════════
+   PANTALLA: FIN DE SEMANA
+   ══════════════════════════════ */
+.weekend-hero {
+  text-align: center;
+  background: var(--surface);
+  padding: 32px 28px 24px;
+  margin-bottom: 18px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
+  border-radius: 12px;
+}
+.weekend-icon { font-size: 3rem; margin-bottom: 16px; }
+.weekend-title {
+  font-family: var(--font-px);
+  font-size: 0.8rem;
+  color: var(--bright);
+  margin-bottom: 6px;
+}
+.weekend-sub {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+}
+.weekend-assessment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  text-align: left;
+}
+.weekend-item {
+  background: var(--surface2);
+  padding: 12px 14px;
+  border-radius: 8px;
+}
+.weekend-item .wi-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+.weekend-item .wi-text {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+/* ══════════════════════════════
+   PANTALLA: ESCENARIO
+   ══════════════════════════════ */
+.scenario-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  padding: 8px 16px;
+  border-radius: 8px 8px 0 0;
+}
+.scenario-tab.card-red    { background: #5a0e0e; }
+.scenario-tab.card-yellow { background: #6b2e0a; }
+.scenario-tab.card-blue   { background: #063440; }
+.scenario-tab.card-green  { background: #0d3318; }
+.scenario-tab.card-purple { background: #2e1650; }
+.scenario-tab.card-slate  { background: var(--surface2); }
+.scenario-card {
+  background: var(--surface);
+  padding: 22px 26px;
+  margin-bottom: 18px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
+  border-radius: 0 10px 10px 10px;
+}
+.day-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 5px;
+}
+.scenario-icon-big { font-size: 2.2rem; margin-bottom: 10px; }
+.scenario-card h2 { margin-bottom: 12px; }
+.scenario-situation {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: #fff;
+  line-height: 1.75;
+  margin-bottom: 14px;
+}
+.scenario-context {
+  background: rgba(0,0,0,0.2);
+  border-left: 3px solid rgba(255,255,255,0.3);
+  padding: 10px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.7);
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+}
+.scenario-context::before {
+  content: '// CONTEXTO  ';
+  color: rgba(255,255,255,0.45);
+}
+
+/* Card color per category — same dark palette as metric states */
+.scenario-card.card-red    { background: #5a0e0e; }
+.scenario-card.card-yellow { background: #6b2e0a; }
+.scenario-card.card-blue   { background: #063440; }
+.scenario-card.card-green  { background: #0d3318; }
+.scenario-card.card-purple { background: #2e1650; }
+.scenario-card.card-slate  { background: var(--surface2); }
+
+/* Stage direction (narration before speech) */
+.situation-narrative {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.75);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.situation-epilogue { margin-top: 8px; }
+
+/* Speech bubble for quoted dialogue */
+.speech-bubble {
+  background: #fff;
+  border: none;
+  border-radius: 4px 12px 12px 12px;
+  padding: 12px 16px;
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-style: italic;
+  color: var(--blue);
+  line-height: 1.75;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.3);
+}
+
+/* "Feature afectada" prefix label */
+.scenario-project-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-right: 4px;
+}
+
+.choices-label {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.choices-label::before { content: '> '; }
+
+#choices-container { counter-reset: choice; }
+
+.choice-btn {
+  counter-increment: choice;
+  display: block;
+  width: 100%;
+  background: var(--surface);
+  border: 2px solid transparent;
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.1s, background 0.1s, box-shadow 0.06s, transform 0.06s;
+  font-family: inherit;
+  color: var(--text);
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+  border-radius: 8px;
+}
+.choice-btn:hover {
+  background: var(--surface2);
+  box-shadow: 4px 4px 0 rgba(5,80,95,0.5);
+}
+.choice-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0;
+}
+.choice-btn::before {
+  content: '[' counter(choice, decimal-leading-zero) '] ';
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--accent);
+  letter-spacing: 0.04em;
+  display: block;
+  margin-bottom: 5px;
+}
+.choice-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--bright);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+/* ══════════════════════════════
+   PANTALLA: CONSECUENCIA
+   ══════════════════════════════ */
+.consequence-card {
+  background: var(--surface);
+  padding: 22px 26px;
+  margin-bottom: 16px;
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.6);
+}
+.chosen-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.chosen-label::before { content: '> '; color: var(--accent); }
+.chosen-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--bright);
+  margin-bottom: 16px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.4;
+}
+.consequence-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.75;
+}
+
+.delta-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.delta-item {
+  background: var(--surface);
+  border: 2px solid transparent;
+  padding: 10px 8px;
+  text-align: center;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5);
+}
+.delta-name {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--muted);
+  margin-bottom: 5px;
+  line-height: 1.4;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.delta-val { font-family: var(--font-mono); font-size: 1.8rem; font-weight: 700; line-height: 1; }
+.delta-pos {
+  color: var(--green);
+  text-shadow: 0 0 10px rgba(57,211,83,0.95), 0 0 24px rgba(57,211,83,0.5), 0 0 48px rgba(57,211,83,0.2);
+}
+.delta-neg {
+  color: var(--red);
+  text-shadow: 0 0 10px rgba(227,55,30,0.95), 0 0 24px rgba(227,55,30,0.5), 0 0 48px rgba(227,55,30,0.2);
+}
+.delta-neu { color: var(--muted); }
+.metric-delta {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.delta-item-pos {
+  border-color: rgba(57,211,83,0.35);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 14px rgba(57,211,83,0.12);
+}
+.delta-item-neg {
+  border-color: rgba(227,55,30,0.35);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.5), 0 0 14px rgba(227,55,30,0.12);
+}
+
+/* ══════════════════════════════
+   PANTALLA: RESULTADOS
+   ══════════════════════════════ */
+.results-header { text-align: center; margin-bottom: 28px; }
+.outcome-card {
+  background: var(--surface);
+  padding: 44px 32px 36px;
+  text-align: center;
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.8);
+  position: relative;
+  border-radius: 12px;
+}
+.outcome-card::before {
+  content: '';
+  position: absolute;
+  inset: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  pointer-events: none;
+}
+.outcome-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 22px;
+}
+.outcome-title {
+  font-family: var(--font-px);
+  font-size: clamp(0.85rem, 2.2vw, 1.15rem);
+  color: var(--bright);
+  margin-bottom: 22px;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--border);
+  line-height: 1.6;
+}
+.outcome-message {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  max-width: 520px;
+  margin: 0 auto;
+  color: var(--text);
+  line-height: 1.75;
+}
+
+.history-section { margin-bottom: 18px; }
+.history-label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+.history-label::before { content: '// '; color: var(--accent); opacity: 0.6; }
+.history-row {
+  display: flex;
+  gap: 14px;
+  padding: 10px 14px;
+  background: var(--surface);
+  margin-bottom: 6px;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.4);
+}
+.history-day {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--accent);
+  white-space: nowrap;
+  min-width: 44px;
+  padding-top: 3px;
+  letter-spacing: 0.04em;
+}
+.history-scenario {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-bottom: 3px;
+  letter-spacing: 0.03em;
+}
+.history-choice {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.lessons-box {
+  background: rgba(245,190,1,0.06);
+  border: 2px solid rgba(245,190,1,0.3);
+  padding: 18px 22px;
+  margin-bottom: 26px;
+  box-shadow: 4px 4px 0 rgba(100,75,0,0.3);
+  border-radius: 8px;
+}
+.lessons-box h3 { color: var(--accent); margin-bottom: 12px; }
+.lessons-box ul { padding-left: 16px; }
+.lessons-box li {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 5px;
+}
+
+.results-footer { text-align: center; }
+.mt16 { margin-top: 16px; }
+.mt24 { margin-top: 24px; }
+.center { text-align: center; }
+
+/* ── PANTALLA: GAME OVER ── */
+.gameover-header { text-align: center; padding: 36px 20px 26px; }
+.gameover-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--red-fail);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.gameover-icon { font-size: 2.4rem; margin-bottom: 12px; }
+.gameover-title {
+  font-family: var(--font-px);
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  color: var(--red-fail);
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.gameover-message {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.7;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.gameover-metric-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--red-fail);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin: 4px 0 20px;
+  opacity: 0.75;
+}
+.lessons-box-red {
+  background: rgba(176,24,24,0.06);
+  border: 2px solid rgba(176,24,24,0.3);
+  border-radius: 8px;
+  padding: 16px 20px;
+  box-shadow: 4px 4px 0 rgba(176,24,24,0.3);
+}
+.lessons-box-red h3 { color: var(--red-fail); margin-bottom: 12px; }
+
+/* ══════════════════════════════
+   RESPONSIVE — MOBILE
+   ══════════════════════════════ */
+@media (max-width: 600px) {
+  body {
+    padding: 48px 14px 60px;
+    font-size: 15px;
+  }
+
+  .game-logo { font-size: 0.5rem; top: 10px; left: 12px; }
+  .sprint-counter { font-size: 0.48rem; top: 26px; left: 12px; }
+
+  h2 { font-size: 0.72rem; }
+
+  /* Metrics: 3 columnas en mobile, pills reducidos */
+  .metrics-grid  { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .metric        { padding: 7px 8px; }
+  .metric-name   { font-size: 0.6rem; }
+  .metric-track  { height: 7px; gap: 1px; }
+  .metric-delta  { font-size: 0.65rem; }
+  .delta-grid    { grid-template-columns: repeat(2, 1fr); }
+
+  /* Weekend assessment: columna única */
+  .weekend-assessment { grid-template-columns: 1fr; }
+
+  /* Story rows: tag se envuelve debajo */
+  .story-row  { flex-wrap: wrap; gap: 8px; }
+  .story-desc { max-width: 100%; }
+
+  /* Cards: menos padding */
+  .day-card         { padding: 22px 16px; }
+  .scenario-card    { padding: 18px 14px; }
+  .consequence-card { padding: 18px 14px; }
+  .weekend-hero     { padding: 24px 16px 20px; }
+
+  /* Gameplay bar fijo en mobile */
+  .gameplay-bar.active {
+    display: block;
+    padding-top: 48px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  body.gameplay-bar-active .scenario-tab,
+  body.gameplay-bar-active .consequence-card { margin-top: 16px; }
+
+  /* Sprint board: compacto en mobile */
+  .sprint-board        { padding: 8px 10px 10px; }
+  .sprint-board-items  { gap: 4px; }
+  .sb-item             { padding: 5px 7px; gap: 3px; }
+  .sprint-board-items .sb-item { min-height: 0; }
+  .sb-item-name        { font-size: 0.6rem; -webkit-line-clamp: 2; }
+  .sb-item-status      { display: none; }
+  .sprint-board-items .sb-item-name { display: none; }
+  .sprint-board-items .sb-item { cursor: pointer; position: relative; }
+  .sprint-board-items .sb-item::after {
+    content: attr(data-name);
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0;
+    transform: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    padding: 4px 8px;
+    border-radius: 5px;
+    white-space: nowrap;
+    z-index: 20;
+    pointer-events: none;
+  }
+  .sprint-board-items .sb-item.expanded::after { display: block; }
+  .sprint-board-items .sb-item.tooltip-right::after { left: auto; right: 0; }
+  .sprint-board-items .sb-item-tag { color: transparent; position: relative; width: 1.5rem; text-align: center; }
+  .sprint-board-items .sb-item-tag::after { content: attr(data-short); position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--tag-color); }
+
+  /* Textos: anchura completa */
+  .day-summary      { max-width: 100%; }
+  .outcome-message  { max-width: 100%; }
+  .gameover-message { max-width: 100%; }
+
+  /* Pantalla de título */
+  .title-screen  { padding: 32px 10px 24px; min-height: calc(100vh - 80px); }
+  .title-eyebrow { font-size: 0.62rem; padding: 4px 12px; margin-bottom: 20px; }
+  .title-sub     { font-size: 0.83rem; margin-bottom: 28px; }
+  .title-note    { font-size: 0.7rem; }
+  .btn           { padding: 8px 12px; font-size: 0.58rem; }
+  .btn-lg        { font-size: 0.6rem; padding: 12px 16px; }
+
+  /* Timeline más compacto */
+  .sprint-timeline { padding: 8px 12px; }
+  .tl-label        { font-size: 0.62rem; margin-left: 8px; }
+
+  /* Choices */
+  .choice-text { font-size: 0.85rem; }
+
+  /* History */
+  .history-row { flex-wrap: wrap; gap: 6px; }
+}
+.lessons-box-red ul { padding-left: 16px; }
+.lessons-box-red li {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+/* ── TABS ── */
+.tab-nav {
+  display: flex;
+  gap: 0;
+  margin-bottom: 0;
+  border-bottom: 2px solid var(--border);
+}
+.tab-btn {
+  background: var(--surface2);
+  border: 2px solid var(--border);
+  border-bottom: none;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  padding: 9px 18px;
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: background 0.12s, color 0.12s;
+  margin-bottom: -2px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 6px 6px 0 0;
+}
+.tab-btn + .tab-btn { border-left: none; }
+.tab-btn:hover { background: var(--surface); color: var(--text); }
+.tab-btn.active {
+  background: var(--surface);
+  color: var(--bright);
+  border-color: var(--border);
+  border-bottom-color: var(--surface);
+}
+.tab-badge {
+  display: inline-block;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.6rem;
+  padding: 1px 5px;
+  line-height: 1.4;
+}
+.tab-btn.active .tab-badge { color: var(--accent); border-color: rgba(245,190,1,0.35); }
+.tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 0 4px;
+}
+.tab-panel.active { display: flex; }
+
+/* ── STORY CARDS ── */
+.story-card {
+  background: var(--surface);
+  padding: 14px 16px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  border-radius: 8px;
+}
+.story-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.story-card-name {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--bright);
+  line-height: 1.4;
+}
+.story-card-desc {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+@media (max-width: 600px) {
+  .tab-btn { font-size: 0.62rem; padding: 8px 12px; }
+}
+
+/* ── GAME HEADER (persistente desktop) ── */
+#game-header {
+  display: none;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+body.game-header-active #game-header { display: block; }
+@media (max-width: 600px) { #game-header { display: none !important; } }
+
+/* ── TUTORIAL ── */
+.tutorial-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+.tutorial-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.tut-pips { display: flex; gap: 6px; align-items: center; }
+.tut-pip {
+  height: 8px;
+  width: 8px;
+  background: var(--border);
+  clip-path: polygon(0 0,100% 0,100% 100%,0 100%);
+  transition: background 0.2s, width 0.2s;
+}
+.tut-pip.done    { background: var(--green); }
+.tut-pip.current { background: var(--accent); width: 22px; }
+.tutorial-step        { display: none; }
+.tutorial-step.active { display: block; animation: fadeUp 0.3s ease both; }
+.tut-icon {
+  font-size: 2.8rem;
+  display: block;
+  text-align: center;
+  margin-bottom: 18px;
+}
+.tut-title {
+  font-family: var(--font-px);
+  font-size: 0.8rem;
+  color: var(--bright);
+  letter-spacing: 0.05em;
+  text-align: center;
+  margin-bottom: 20px;
+}
+.tut-body {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.75;
+  max-width: 560px;
+  margin: 0 auto 20px;
+}
+.tut-example {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 16px auto;
+  max-width: 560px;
+}
+.tut-example-caption {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 10px;
+  margin-bottom: 0;
+}
+.tut-callout {
+  background: rgba(5,147,162,0.06);
+  border-left: 3px solid var(--accent);
+  border-top: 1px solid rgba(5,147,162,0.25);
+  border-bottom: 1px solid rgba(5,147,162,0.25);
+  border-right: 1px solid rgba(5,147,162,0.25);
+  padding: 14px 18px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--accent);
+  line-height: 1.65;
+  max-width: 560px;
+  margin: 0 auto 24px;
+}
+.tut-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 auto 20px;
+}
+.tut-grid--vertical {
+  grid-template-columns: 1fr;
+}
+.tut-card {
+  background: var(--surface);
+  padding: 14px 16px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+  border-radius: 8px;
+}
+.tut-card-icon  { font-size: 1.4rem; display: block; margin-bottom: 8px; }
+.tut-card-title {
+  font-family: var(--font-px);
+  font-size: 0.55rem;
+  color: var(--bright);
+  letter-spacing: 0.06em;
+  margin-bottom: 6px;
+}
+.tut-card-desc {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.tut-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 2px solid var(--border);
+}
+@media (max-width: 600px) {
+  .tut-grid  { grid-template-columns: 1fr; }
+  .tut-body  { font-size: 0.82rem; }
+  .tut-title { font-size: 0.7rem; }
+}
+
+/* ── PROJECT REFS ── */
+.scenario-project {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.scenario-project-name {
+  color: var(--bright);
+  letter-spacing: 0.02em;
+}
+.consequence-project {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  margin-bottom: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+.consequence-project-name { color: var(--text); }
+.consequence-project-status { white-space: nowrap; flex-shrink: 0; }
+.consequence-project-status.delivered { color: var(--green); }
+.consequence-project-status.failed    { color: var(--red); }
+
+/* ── DELIVERY ── */
+.delivery-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--surface);
+  margin-bottom: 6px;
+  border-radius: 8px;
+}
+.delivery-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+.delivery-name {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.delivery-badge {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.delivery-badge.delivered { color: var(--green); }
+.delivery-badge.failed    { color: var(--red); }
+.sclose-reveal {
+  animation: fadeUp 0.3s ease both;
+}
+.sclose-impact-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.sclose-impact-val {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  min-width: 3.5rem;
+  text-align: right;
+}
+
+/* ── SPRINT LOADING ── */
+.sprint-loading {
+  margin: 20px 0 8px;
+}
+.sprint-loading-msg {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+  min-height: 1.4em;
+  margin-bottom: 10px;
+  text-align: center;
+}
+.sprint-loading-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.sprint-loading-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* ── SPRINT BOARD ── */
+.sprint-board {
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 10px 14px 12px;
+  margin-bottom: 14px;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+}
+.sprint-board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.sprint-board-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.sprint-board-label::before { content: '// '; color: var(--accent); opacity: 0.6; }
+.sprint-board-items {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+.sb-item {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  min-height: 82px;
+}
+.sb-item-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+.sb-item-size {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+.sprint-board-items .sb-item-size { display: none; }
+.sb-item-status.pending { display: none; }
+.sb-item-tag {
+  font-size: 0.55rem;
+  padding: 1px 6px;
+}
+.sb-item-name {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--bright);
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.sb-item-status {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+}
+.sb-item-status.delivered { color: var(--green); }
+.sb-item-status.failed    { color: var(--red); }
+.sb-item-status.pending   { color: var(--muted); }
+.sb-item-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.sb-item-dot.delivered { background: var(--green); border-color: transparent; }
+.sb-item-dot.failed    { background: var(--red); border-color: transparent; }
+.sb-item-dot.pending   { background: transparent; }
+.sb-capacity {
+  margin-top: 10px;
+}
+.sb-capacity-track {
+  width: 100%;
+  height: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.sb-capacity-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.sb-capacity-fill.full { background: var(--green); }
+.sb-capacity-fill.over { background: var(--red); }
+.sb-capacity-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+.sb-item.empty {
+  border-style: dashed;
+  opacity: 0.4;
+  justify-content: center;
+  align-items: center;
+}
+.sb-item-empty-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+
+/* ── TITLE SCREEN ── */
+.title-divider {
+  width: 48px;
+  height: 2px;
+  background: var(--accent);
+  margin: 22px auto;
+  opacity: 0.55;
+}
+.title-features {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.title-feature {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+/* ── PROJECT SELECT SLOTS ── */
+.select-slots-header {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.select-slots-header::before { content: '// '; color: var(--accent); opacity: 0.6; }
+.select-slots {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 20px;
+}
+.select-slot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 2px solid transparent;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  background: var(--surface2);
+  min-height: 44px;
+  transition: border-color 0.15s, background 0.15s;
+  border-radius: 8px;
+}
+.select-slot.filled {
+  border-color: rgba(5,147,162,0.45);
+  background: rgba(5,147,162,0.05);
+  color: var(--bright);
+}
+.slot-placeholder {
+  color: var(--muted);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.project-card { position: relative; }
+.project-card-check {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  color: var(--accent);
+  line-height: 1;
+}
+
+
+/* ── PROJECT SELECT ── */
+.project-select-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.project-card {
+  background: var(--surface);
+  border: 2px solid transparent;
+  padding: 14px 16px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
+  transition: border-color 0.1s, background 0.1s, box-shadow 0.06s, transform 0.06s;
+  text-align: left;
+  width: 100%;
+  font-family: inherit;
+  color: var(--text);
+  border-radius: 10px;
+}
+.project-card:hover {
+  background: #0c3848;
+}
+.project-card:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.5); }
+.project-card.selected {
+  background: var(--surface2);
+  box-shadow: 3px 3px 0 rgba(3,60,70,0.5);
+}
+.project-card.disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.project-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+.project-card-name {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--bright);
+  line-height: 1.4;
+}
+.project-card-desc {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.5;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin-top: 0;
+  transition: max-height 0.2s ease, opacity 0.2s ease, margin-top 0.2s ease;
+}
+.project-card:hover .project-card-desc {
+  max-height: 5em;
+  opacity: 1;
+  margin-top: 6px;
+}
+@media (max-width: 600px) {
+  .project-select-grid { grid-template-columns: 1fr; }
+}
+
+/* ── SLACK WIDGET ──────────────────────────────────────────────── */
+.slack-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+.slack-icon {
+  width: 44px;
+  height: 44px;
+  background: #4A154B;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  pointer-events: all;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+  position: relative;
+}
+.slack-icon:hover { transform: scale(1.08); box-shadow: 0 4px 16px rgba(74,21,75,0.6); }
+.slack-icon svg { width: 26px; height: 26px; }
+.slack-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  background: #E3371E;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  display: none;
+}
+.slack-badge.visible { display: block; }
+.slack-notif {
+  width: 280px;
+  background: #1a1d21;
+  border: 1px solid #3d2040;
+  border-left: 3px solid #4A154B;
+  border-radius: 6px;
+  padding: 10px 12px;
+  pointer-events: all;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  cursor: pointer;
+}
+.slack-notif.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.slack-notif-header {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #6a9ab0;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.slack-notif-header span { color: #a0c4d4; }
+.slack-notif-body {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.slack-notif-avatar {
+  font-size: 20px;
+  line-height: 1;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.slack-notif-content { flex: 1; min-width: 0; }
+.slack-notif-name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--bright);
+  font-weight: bold;
+  margin-bottom: 2px;
+}
+.slack-notif-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #8fc8d8;
+  line-height: 1.4;
+  word-break: break-word;
+}
+</style>
+</head>
+<body>
+<div class="game-logo">Sprint<span class="accent">!</span><span class="blink">_</span></div>
+<div class="sprint-counter" id="sprint-counter"></div>
+<div class="game-copyright">© 2026 @gonpizzorno</div>
+<div id="gameplay-bar" class="gameplay-bar">
+  <div id="gb-timeline" class="sprint-timeline"></div>
+  <div id="gb-metrics" class="metrics-grid"></div>
+  <div id="gb-sprint"></div>
+</div>
+<div class="wrap">
+
+<div id="game-header">
+  <div id="gh-timeline" class="sprint-timeline"></div>
+  <div id="gh-metrics" class="metrics-grid"></div>
+  <div id="gh-sprint"></div>
+</div>
+
+<!-- ══════════════════════════════
+     TÍTULO
+     ══════════════════════════════ -->
+<div id="screen-title" class="screen active">
+  <div class="title-screen">
+    <div class="title-eyebrow">Simulador de PM</div>
+    <h1>Sprint<span class="accent">!</span><span class="blink">_</span></h1>
+    <p class="title-sub">
+      Eres Product Manager en un SaaS B2B.<br>Prioriza las iniciativas, toma decisiones y entrega con éxito.<br>¿Cuánto aguanta tu sprint?
+    </p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-primary btn-lg" onclick="showTutorial()">&gt; JUGAR</button>
+    </div>
+    <div class="title-features">
+      <span class="title-feature">sprint de 2 semanas</span>
+      <span class="title-feature">3 KPI clave</span>
+      <span class="title-feature">situaciones reales</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     TUTORIAL
+     ══════════════════════════════ -->
+<div id="screen-tutorial" class="screen">
+  <div class="tutorial-header">
+    <div class="tutorial-label">Tutorial</div>
+    <div class="tut-pips" id="tut-pips"></div>
+  </div>
+
+  <!-- STEP 1: CONTEXTO -->
+  <div id="tstep-1" class="tutorial-step active">
+    <span class="tut-icon">🚀</span>
+    <div class="tut-title">El contexto</div>
+    <p class="tut-body">
+      Bienvenido a <strong style="color:var(--bright)">Sprint!</strong> Un juego de toma de decisiones basado en la experiencia real de un PM.<br>Eres Product Manager de un equipo de desarrollo. Tu objetivo es planificar el sprint priorizando iniciativas y asegurar que se entregan mientras maximizas tus KPI: moral del equipo, relación con clientes y estabilidad.<br>Cada día te enfrentas a diferentes situaciones: urgencias que requieren tu decisión o cosas que simplemente ocurren con sus propias consecuencias.<br>No hay decisiones correctas:<br><strong style="color:var(--bright)">Cada decisión tiene su contrapartida.</strong>
+    </p>
+  </div>
+
+  <!-- STEP 2: OBJETIVOS -->
+  <div id="tstep-2" class="tutorial-step">
+    <span class="tut-icon">📦</span>
+    <div class="tut-title">Cumple tus compromisos</div>
+    <p class="tut-body">
+      Al inicio eliges las iniciativas del sprint. La barra de delivery avanza cada día, pero tus decisiones pueden frenarla. Al final del sprint, cada proyecto entregado tiene un impacto positivo en los indicadores y cada uno no entregado uno negativo.<br><strong style="color:var(--bright)">¡Cuidado!</strong> Los proyectos más grandes ("L") tienen mayor riesgo si no se entregan.
+    </p>
+    <div class="tut-example">
+      <div class="sprint-board">
+        <div class="sprint-board-header">
+          <span class="sprint-board-label">Sprint</span>
+          <span class="sb-capacity-label">8 / 10 pts</span>
+        </div>
+        <div class="sprint-board-items">
+          <div class="sb-item" style="grid-column:span 2">
+            <div class="sb-item-top">
+              <span class="sb-item-size">S</span>
+              <span class="sb-item-status delivered">Completado</span>
+            </div>
+            <div class="sb-item-name">Fix de bug crítico</div>
+          </div>
+          <div class="sb-item" style="grid-column:span 3">
+            <div class="sb-item-top">
+              <span class="sb-item-size">M</span>
+              <span class="sb-item-status delivered">Completado</span>
+            </div>
+            <div class="sb-item-name">Exportación de informes</div>
+          </div>
+          <div class="sb-item" style="grid-column:span 3">
+            <div class="sb-item-top">
+              <span class="sb-item-size">M</span>
+              <span class="sb-item-status pending">En progreso</span>
+            </div>
+            <div class="sb-item-name">Integración SSO</div>
+          </div>
+          <div class="sb-item" style="grid-column:span 2; opacity:0.35">
+            <div class="sb-item-top">
+              <span class="sb-item-size">—</span>
+            </div>
+            <div class="sb-item-name" style="color:var(--muted)">vacío</div>
+          </div>
+        </div>
+        <div class="sb-capacity" style="margin-top:12px">
+          <div style="font-family:var(--font-mono);font-size:0.6rem;color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:5px;">▶ Progreso de entrega</div>
+          <div class="sb-capacity-track" style="height:10px">
+            <div class="sb-capacity-fill" style="width:62%"></div>
+          </div>
+        </div>
+      </div>
+      <p class="tut-example-caption">
+        La barra avanza conforme el sprint progresa. Cuando cruza el límite de un proyecto, queda <span style="color:var(--green)">Completado</span>. Lo que la barra no alcanza al final queda <span style="color:var(--red)">No entregado</span>.
+      </p>
+    </div>
+  </div>
+
+  <!-- STEP 3: INDICADORES -->
+  <div id="tstep-3" class="tutorial-step">
+    <span class="tut-icon">📊</span>
+    <div class="tut-title">Los indicadores</div>
+    <p class="tut-body">
+      A medida que avanza el sprint debes asegurar la entrega de las iniciativas pero sin descuidar tus objetivos. Mantén los 3 indicadores en verde. Si cualquiera de ellos llega a 0, el sprint fracasa y pierdes.
+    </p>
+    <div id="tut-metrics" class="metrics-grid"></div>
+  </div>
+
+  <!-- STEP 4: RESUMEN -->
+  <div id="tstep-4" class="tutorial-step">
+    <span class="tut-icon">🏁</span>
+    <div class="tut-title">¿Listo?</div>
+    <p class="tut-body">Empieza eligiendo los proyectos del sprint.</p>
+  </div>
+
+  <div class="tut-nav">
+    <button id="tut-back" class="btn btn-ghost" onclick="tutNav(-1)">&#8592; <span id="tut-back-label">MENÚ</span></button>
+    <button class="btn btn-ghost" onclick="skipTutorial()">SALTAR</button>
+    <button id="tut-next" class="btn btn-primary" onclick="tutNav(1)">SIGUIENTE &#8594;</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     INDICADORES
+     ══════════════════════════════ -->
+<div id="screen-indicators" class="screen">
+  <div class="weekend-hero">
+    <div class="weekend-icon">📊</div>
+    <div class="weekend-title">Los indicadores del sprint</div>
+    <p class="weekend-sub">Cuatro métricas reflejan el estado de tu sprint. Todas empiezan en 7/10. Si cualquiera llega a 0, el sprint se interrumpe.</p>
+  </div>
+  <div class="metrics-grid" id="indicators-metrics"></div>
+  <div class="center mt16">
+    <button class="btn btn-primary" onclick="showProjectSelect()">&gt; PLANIFICAR SPRINT</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     SELECCIÓN DE PROYECTOS
+     ══════════════════════════════ -->
+<div id="screen-project-select" class="screen">
+  <div class="sprint-header">
+    <h2 id="ps-title"></h2>
+    <p class="mt16">Elige proyectos para comprometer en este sprint. Capacidad: <strong style="color:var(--bright)">10 puntos</strong> (S=2, M=3, L=5).</p>
+  </div>
+  <div class="metrics-grid" id="ps-metrics"></div>
+  <div id="ps-sprint-board"></div>
+  <div class="project-select-grid" id="project-select-grid"></div>
+  <div class="center">
+    <button class="btn btn-primary" id="confirm-projects-btn" onclick="confirmProjectSelection()" disabled>&gt; CONFIRMAR SPRINT</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     TABLERO DEL SPRINT
+     ══════════════════════════════ -->
+
+<!-- ══════════════════════════════
+     DÍA NORMAL
+     ══════════════════════════════ -->
+<div id="screen-day" class="screen">
+  <div class="scenario-tab" id="d-tab">
+    <span id="d-tag" class="tag"></span>
+  </div>
+  <div class="day-card">
+    <div id="d-icon" class="day-icon"></div>
+    <div id="d-title" class="day-title"></div>
+    <p id="d-summary" class="day-summary"></p>
+    <div id="d-effects" class="day-effects"></div>
+  </div>
+  <div class="center">
+    <button id="d-btn" class="btn btn-primary" onclick="advanceDay()"></button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     ESCENARIO DE URGENCIA
+     ══════════════════════════════ -->
+<div id="screen-scenario" class="screen">
+  <div class="scenario-tab" id="s-tab">
+    <span id="s-tag" class="tag"></span>
+  </div>
+  <div class="scenario-card">
+    <div id="s-icon" class="scenario-icon-big"></div>
+    <h2 id="s-title"></h2>
+    <div id="s-situation" class="scenario-situation mt16"></div>
+    <div id="s-context" class="scenario-context mt16"></div>
+  </div>
+  <p class="choices-label">¿Qué haces?</p>
+  <div id="choices-container"></div>
+</div>
+
+<!-- ══════════════════════════════
+     CONSECUENCIA
+     ══════════════════════════════ -->
+<div id="screen-consequence" class="screen">
+  <div class="consequence-card">
+    <div class="chosen-label">Has elegido</div>
+    <div id="c-chosen" class="chosen-text"></div>
+    <p id="c-consequence" class="consequence-text"></p>
+  </div>
+  <div id="c-project"></div>
+  <div class="center">
+    <button id="cs-btn" class="btn btn-primary" onclick="advanceDay()"></button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     FIN DE SEMANA
+     ══════════════════════════════ -->
+<div id="screen-weekend" class="screen">
+  <div class="weekend-hero">
+    <div class="weekend-icon">☀️</div>
+    <div class="weekend-title">Fin de semana — a mitad de camino</div>
+    <p class="weekend-sub">5 días completados · 5 días por delante · hora de hacer balance</p>
+    <div class="weekend-assessment" id="weekend-assessment"></div>
+  </div>
+  <div class="center mt16">
+    <button class="btn btn-primary" onclick="startWeek2()">&gt; EMPEZAR SEMANA 2</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     INICIO DE SPRINT (DÍA 1)
+     ══════════════════════════════ -->
+<div id="screen-sprint-start" class="screen">
+  <div class="sprint-loading">
+    <div class="sprint-loading-msg" id="ss-loading-msg"></div>
+    <div class="sprint-loading-bar"><div class="sprint-loading-fill" id="ss-loading-fill"></div></div>
+  </div>
+  <div class="center mt16">
+    <button class="btn btn-primary" id="ss-btn" onclick="beginDay1()" disabled>&gt; EMPEZAR</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     CIERRE DE SPRINT (DÍA 10)
+     ══════════════════════════════ -->
+<div id="screen-sprint-close" class="screen">
+  <div id="sclose-timeline" class="sprint-timeline"></div>
+  <div class="metrics-grid" id="sprint-close-metrics"></div>
+  <div id="sclose-sprint-board"></div>
+  <div class="weekend-hero">
+    <div class="weekend-icon">🏁</div>
+    <div class="weekend-title">Día Final — Cierre del Sprint</div>
+    <p class="weekend-sub">Último día del sprint. El equipo está cerrando historias, redactando notas de release y preparando la sprint review. Hay una mezcla de alivio y expectativa en el ambiente.</p>
+  </div>
+  <div class="history-section mt24">
+    <div class="history-label">Impacto de las entregas</div>
+    <div id="sclose-impacts"></div>
+  </div>
+  <div class="center mt16">
+    <button id="sclose-btn" class="btn btn-primary" onclick="showResults()" disabled>&gt; SPRINT REVIEW</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════
+     RESULTADOS
+     ══════════════════════════════ -->
+<div id="screen-results" class="screen">
+  <div class="results-header">
+    <div class="outcome-card">
+      <div class="outcome-eyebrow" id="r-eyebrow"></div>
+      <div id="r-icon" class="gameover-icon"></div>
+      <div id="r-title" class="outcome-title"></div>
+      <p id="r-message" class="outcome-message"></p>
+    </div>
+  </div>
+  <div class="metrics-grid" id="results-metrics"></div>
+  <div class="history-section mt24">
+    <div class="history-label">Estado de entregas</div>
+    <div id="results-deliveries"></div>
+  </div>
+  <div class="lessons-box">
+    <h3>Aprendizajes de este sprint</h3>
+    <ul id="lessons-list"></ul>
+  </div>
+  <div class="history-section mt24">
+    <div class="history-label">Tus decisiones en este sprint</div>
+    <div id="history-list"></div>
+  </div>
+  <div class="results-footer" id="results-footer"></div>
+</div>
+
+<!-- ══════════════════════════════
+     GAME OVER
+     ══════════════════════════════ -->
+<div id="screen-gameover" class="screen">
+  <div class="gameover-header">
+    <div class="gameover-badge">// Sprint Interrumpido</div>
+    <div id="go-icon" class="gameover-icon"></div>
+    <div id="go-title" class="gameover-title"></div>
+    <p id="go-message" class="gameover-message"></p>
+  </div>
+  <div id="go-metric-label" class="gameover-metric-label"></div>
+  <div class="metrics-grid" id="gameover-metrics"></div>
+  <div class="history-section mt24">
+    <div class="history-label">Estado de entregas</div>
+    <div id="gameover-deliveries"></div>
+  </div>
+  <div class="lessons-box-red mt24">
+    <h3>Qué falló en este sprint</h3>
+    <ul id="go-lessons-list"></ul>
+  </div>
+  <div class="history-section mt24">
+    <div class="history-label">Tus decisiones hasta este punto</div>
+    <div id="go-history-list"></div>
+  </div>
+  <div class="results-footer mt24">
+    <button class="btn btn-ghost" onclick="resetGame()">&#8635; VOLVER A JUGAR</button>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<script>
+// ════════════════════════════════════════════════
+// DATOS DEL JUEGO
+// ════════════════════════════════════════════════
+
+const NORMAL_DAYS = [
+  {
+    icon: '☕', title: 'Stand-up fluido',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "El stand-up ha terminado en menos de 15 minutos. Sin bloqueos. El equipo reporta buen avance en la integración con el ERP. Todo el mundo está concentrado.",
+    effects: { team: +1, trust: 0, debt: 0 }
+  },
+  {
+    icon: '✅', title: 'Historia entregada antes de tiempo',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "Un dev termina los nuevos campos del endpoint antes de lo previsto y echa una mano con los bugs para seguir productivo. Las pequeñas victorias se acumulan.",
+    effects: { team: 0, trust: +1, debt: 0 }
+  },
+  {
+    icon: '💬', title: 'Aclaración de requisitos',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "El Product Owner tiene dudas sobre el alcance de la integración con el ERP. Pasáis 30 minutos alineándoos. Sin dramas — solo asegurarse de que todos trabajáis con el mismo entendimiento.",
+    effects: { team: +1, trust: 0, debt: 0 }
+  },
+  {
+    icon: '🔁', title: 'Día de revisión de PRs',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "Tres pull requests revisadas y mergeadas. El equipo se da feedback constructivo. Un bug menor pillado antes de llegar a staging.",
+    effects: { team: 0, trust: 0, debt: +1 }
+  },
+  {
+    icon: '📊', title: 'Check-in con stakeholders',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "Mandas una actualización breve del sprint al Product Owner. Están contentos con el progreso y la transparencia. Sin nuevas peticiones por hoy.",
+    effects: { team: 0, trust: +1, debt: 0 }
+  },
+  {
+    icon: '🎯', title: 'El equipo en racha',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "Uno de esos días raros en los que todo fluye. Sin interrupciones, sin desvíos. El stand-up fue ágil. El equipo funciona como una máquina bien engrasada.",
+    effects: { team: +1, trust: 0, debt: 0 }
+  },
+  {
+    icon: '🐛', title: 'Bug pillado en QA',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "QA detecta un bug no trivial en el rediseño del módulo de facturación durante los tests. El dev encargado lo soluciona en menos de una hora. El proceso funcionando exactamente como debe.",
+    effects: { team: 0, trust: 0, debt: +1 }
+  },
+  {
+    icon: '📄', title: 'Día de documentación',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "Alguien del equipo pasa la tarde escribiendo documentación técnica para las features completadas. Trabajo poco glamuroso, pero el equipo sabe que importa. Los sprints futuros lo agradecerán.",
+    effects: { team: 0, trust: 0, debt: +1 }
+  },
+  {
+    icon: '🤝', title: 'Sincronización entre equipos',
+    tag: 'Sin sorpresas...', tagClass: 'tag-slate',
+    summary: "Te unes a una sync rápida con DevOps para alinear las ventanas de despliegue. Sin puntos de acción para el sprint, pero evita una sorpresa inesperada más adelante.",
+    effects: { team: 0, trust: 0, debt: +1 }
+  },
+];
+
+
+const SCENARIOS = [
+  {
+    icon: '📧', tag: 'Petición', tagClass: 'tag-blue',
+    title: 'El cliente esperaba más',
+    situation: "Ventas te manda un mensaje: 'El cliente me ha escrito. La funcionalidad que entregamos el sprint pasado no cumple del todo sus expectativas. Dice que falta un par de cosas y que el comportamiento no es exactamente lo que esperaban. Está frustrado.'",
+    context: "La funcionalidad se entregó según las especificaciones acordadas. Pero parece que las expectativas del cliente eran distintas a lo que se definió en la planificación.",
+    choices: [
+      {
+        text: "Priorizar un fix rápido en este sprint para ajustarse a las expectativas",
+
+        consequence: "Interrumpes el sprint para atender el feedback. El equipo pierde foco y una historia queda sin terminar. El cliente queda más satisfecho a corto plazo. En la retro, ventas comenta: 'Bien, pero así no podemos trabajar sprint a sprint.'",
+        effects: { team: -2, trust: +2, debt: -1, delivery: -1 }
+      },
+      {
+        text: "Hablar con ventas, entender el gap real y planificarlo en el próximo sprint",
+
+        consequence: "El cliente no está contento a corto plazo, pero ventas valora la respuesta organizada. Dedicáis tiempo a documentar el gap. El próximo sprint lo entregáis bien definido y sin prisas.",
+        effects: { team: +1, trust: -1, debt: 0 }
+      },
+      {
+        text: "Pedir a ventas que gestione la expectativa — lo entregado es lo acordado",
+
+        consequence: "Técnicamente correcto. Pero el cliente siente que no le escucháis. Ventas tiene una conversación difícil. 'Me pusiste en una posición imposible', te dice después.",
+        effects: { team: +1, trust: -3, debt: 0 }
+      }
+    ]
+  },
+  {
+    icon: '📞', tag: 'Petición', tagClass: 'tag-blue',
+    title: 'El cliente ha llamado al CEO',
+    trigger: s => s.trust <= 6,
+    situation: "Son las 9:15. El CEO te llama directamente: 'Acabo de hablar con el director de TI del cliente. Hay un error en producción que les está bloqueando. Necesito que esto esté resuelto antes de las 12.'",
+    context: "El equipo acaba de arrancar el sprint. El error no había sido reportado por los canales habituales. Ningún dev lo conoce todavía.",
+    choices: [
+      {
+        text: "Parar el sprint y asignar al equipo a resolver el bug antes de las 12",
+
+        consequence: "El bug se resuelve a las 11:45. El CEO está satisfecho. El equipo entiende la urgencia, pero nota que los procesos normales se saltan cuando alguien llama arriba. El sprint pierde medio día.",
+        effects: { team: -2, trust: +3, debt: 0, delivery: -1 }
+      },
+      {
+        text: "Asignar a un dev al bug y mantener el resto del sprint activo",
+
+        consequence: "El bug se resuelve a las 13:30. El CEO no está del todo satisfecho con el timing, pero lo acepta. El sprint sigue adelante. El equipo lo gestiona con calma.",
+        effects: { team: -1, trust: +1, debt: 0, delivery: -1 }
+      },
+      {
+        text: "Pedir 30 minutos para evaluar la gravedad real antes de actuar",
+
+        consequence: "El CEO interpreta el retraso como falta de urgencia y escala internamente. Para cuando tienes el diagnóstico, el cliente ha vuelto a llamar. El bug era menor — pero la narrativa ya está dañada.",
+        effects: { team: +1, trust: -3, debt: 0 }
+      }
+    ]
+  },
+  {
+    icon: '🔒', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Operaciones ha encontrado algo preocupante',
+    situation: "El lead de Operaciones te escribe en privado: 'Hemos detectado una vulnerabilidad en producción. No hay fuga de datos confirmada y el cliente no lo sabe, pero si no se parchea pronto podría ocurrir. Necesito que alguien lo mire hoy.'",
+    context: "El equipo está al 100% de capacidad. Parar un dev supone retrasar una historia crítica. Pero si la vulnerabilidad se explota, el impacto sería enorme.",
+    choices: [
+      {
+        text: "Parar el sprint parcialmente — asignar un dev al parche hoy",
+
+        consequence: "El parche se aplica antes del cierre. El riesgo queda contenido. El sprint pierde capacidad, pero el equipo entiende la decisión. Nadie lo sabrá nunca — y eso es exactamente lo que querías.",
+        effects: { team: -1, trust: +1, debt: +3, delivery: -1 }
+      },
+      {
+        text: "Escalar al CTO y dejar que tome la decisión",
+
+        consequence: "El CTO agradece la transparencia y autoriza parar. La vulnerabilidad queda parcheada. El equipo lo gestiona con calma al tener cobertura de dirección.",
+        effects: { team: 0, trust: +1, debt: +1, delivery: -1 }
+      },
+      {
+        text: "Registrarlo como tarea técnica y planificarlo para el próximo sprint",
+
+        consequence: "El sprint avanza sin interrupciones. Tres días después, un auditor externo detecta el fallo durante una revisión rutinaria. La conversación con dirección es muy incómoda. 'Sabías que existía y no lo resolviste.'",
+        effects: { team: 0, trust: -4, debt: -3 }
+      }
+    ]
+  },
+  {
+    icon: '⚠️', tag: 'Contratiempo', tagClass: 'tag-red',
+    project: 'integ-erp',
+    title: 'La integración del ERP se descontrola',
+    situation: "Tu dev de backend se acerca visiblemente preocupado: 'La documentación del ERP del cliente está incompleta. Lo que estimamos como una integración estándar implica desarrollar un adaptador custom desde cero. Triplicamos el tiempo estimado.'",
+    context: "La integración con el ERP es una historia L comprometida con el cliente. Estáis a mitad del sprint y el cliente la considera prioritaria.",
+    choices: [
+      {
+        text: "Reducir el alcance: entregar solo la parte documentada y replantear el resto",
+
+        consequence: "El dev se queda más tranquilo. Entregáis una 'fase 1' que cubre los casos documentados. El cliente está decepcionado pero lo entiende. Los atajos tomados reducen la estabilidad de la plataforma, algo a recuperar el próximo sprint.",
+        effects: { team: 0, trust: -4, debt: -1 },
+      },
+      {
+        text: "Pedir al equipo que asuma el esfuerzo extra para cumplir el compromiso",
+
+        consequence: "El equipo cruncha durante varios días. La integración sale, pero con tests saltados y casos borde ignorados. Tres bugs registrados en la primera semana. El dev responsable pide un día libre justo después del sprint.",
+        effects: { team: -4, trust: +3, debt: -5 },
+      },
+      {
+        text: "Comunicar la situación al cliente y replantear el alcance con ellos",
+
+        consequence: "Conversación difícil con el cliente y ventas. Hay frustración a corto plazo. Pero cuando el próximo sprint entregáis bien lo que prometisteis, la confianza se recupera. El equipo respeta la decisión.",
+        effects: { team: +2, trust: -2, debt: +1 },
+      }
+    ]
+  },
+  {
+    icon: '🔄', tag: 'Petición', tagClass: 'tag-blue',
+    project: 'ui',
+    title: 'El cliente quiere más en el cambio de UI',
+    situation: "Ventas te escribe: 'El cliente ha visto los mockups del cambio de UI en las apps y quiere añadir una nueva pantalla al alcance. Dice que sin eso el cambio no tiene sentido para ellos. La historia ya está al 60%.'",
+    context: "El cambio de UI en las apps es una historia M comprometida para este sprint. Añadir la pantalla supone trabajo adicional estimado en 2-3 días.",
+    choices: [
+      {
+        text: "Absorber el cambio en este sprint — el cliente es prioritario",
+
+        consequence: "El equipo termina el sprint con una historia más grande de lo estimada. El cliente queda satisfecho. En la retro, alguien comenta: 'La próxima vez también pedirá más.' Tendrán razón.",
+        effects: { team: -2, trust: +2, debt: -2 },
+      },
+      {
+        text: "Dividir: entregar lo comprometido ahora y planificar lo nuevo para el siguiente sprint",
+
+        consequence: "El cliente acepta con algo de resistencia pero asume que debería haberlo anticipado. La feature sale limpia y sin prisas. El siguiente sprint la pantalla adicional queda bien definida y entregada.",
+        effects: { team: +1, trust: -1, debt: +1 },
+      },
+      {
+        text: "Rechazar: se entrega lo definido, nada más",
+
+        consequence: "El cliente está frustrado y siente que no sois flexibles. Ventas tiene una conversación complicada. Técnicamente correcto, pero con un coste de confianza alto que costará tiempo recuperar.",
+        effects: { team: +1, trust: -3, debt: 0 },
+      }
+    ]
+  },
+  {
+    icon: '⚔️', tag: 'Contratiempo', tagClass: 'tag-red',
+    project: 'billing',
+    title: 'La guerra de arquitectura',
+    situation: "Dos devs de backend llevan 2 días sin escribir una sola línea de código. Están enfrascados en una disputa sobre cómo abordar el rediseño del módulo de facturación. El stand-up ha durado 50 minutos. El resto del equipo observa.",
+    context: "El rediseño del módulo de facturación es la historia más grande del sprint. Los dos ingenieros tienen argumentos técnicos válidos. Ninguno cede.",
+    choices: [
+      {
+        text: "Tomar tú la decisión — acabar con el debate ahora",
+
+        consequence: "El debate termina. El código avanza. Pero uno de ellos está calladamente resentido. El enfoque elegido funciona pero no es el óptimo — has tomado una decisión técnica fuera de tu área de expertise.",
+        effects: { team: -2, trust: +2, debt: -2 },
+      },
+      {
+        text: "Facilitar una sesión de arquitectura de 2 horas con decisión timeboxed",
+
+        consequence: "Lleva medio día, pero los dos salen alineados y con energía. La solución que alcanzan es mejor que cualquiera de las propuestas originales. El código avanza rápido después.",
+        effects: { team: +1, trust: -1, debt: +2, delivery: -1 },
+      },
+      {
+        text: "'Poneos de acuerdo antes de las 18:00 — necesito ver progreso'",
+
+        consequence: "Eligen una opción al azar para evitar el conflicto contigo. Ninguno la siente suya. El código se escribe bajo tensión. Tres semanas después estáis haciendo un refactor completo.",
+        effects: { team: -4, trust: -1, debt: -4, delivery: -1 },
+      }
+    ]
+  },
+  {
+    icon: '🌀', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Ventas se saltó el proceso',
+    situation: "Un dev se acerca a ti algo incómodo: 'Oye, alguien de ventas me pidió directamente que hiciera un pequeño cambio en una funcionalidad ya entregada para un cliente. Me lo dijo ayer y llevo unas horas en ello. ¿Es normal?' El equipo no tenía visibilidad de esto.",
+    context: "El cambio no es técnicamente complejo, pero no estaba en el sprint ni estimado. El dev ya ha invertido unas horas en ello.",
+    choices: [
+      {
+        text: "Parar el trabajo del dev y hablar con ventas para reconducirlo al proceso",
+
+        consequence: "El dev abandona el trabajo y te lo agradece. Hablas con ventas: 'Entiendo la presión del cliente, pero cualquier cambio pasa primero por mí.' Ventas acepta, aunque algo molesto. El cambio queda correctamente en el backlog.",
+        effects: { team: +1, trust: -1, debt: 0 }
+      },
+      {
+        text: "Dejar que el dev termine — ya está casi hecho y el cliente lo necesita",
+
+        consequence: "El cambio sale, el cliente está contento. Pero el dev cargó con horas no planificadas y otra historia del sprint quedó sin terminar. Ventas repetirá el mismo patrón la semana siguiente.",
+        effects: { team: -2, trust: +1, debt: 0, delivery: -1 }
+      },
+      {
+        text: "Hacer visible el trabajo en el tablero y aceptarlo como parte del sprint",
+
+        consequence: "Al menos el trabajo queda visible. Pero has validado el canal directo ventas-dev. En la retro alguien pregunta: '¿Cuántas cosas no visibles estamos haciendo?' No tienes una buena respuesta.",
+        effects: { team: -1, trust: +1, debt: -1 }
+      }
+    ]
+  },
+  {
+    icon: '❓', tag: 'Contratiempo', tagClass: 'tag-red',
+    project: 'fields',
+    title: 'Nadie entendió lo mismo',
+    situation: "El dev que lleva los nuevos campos para la web te para: 'He terminado lo que entendí, pero creo que lo que querías era otra cosa. ¿Me lo puedes aclarar?' Lo que ha construido difiere en puntos clave de lo que esperabas.",
+    context: "Era una historia S — parecía simple. Pero la descripción era ambigua y no hubo sesión de refinement. Ya llevan dos días trabajando en la dirección equivocada.",
+    choices: [
+      {
+        text: "Aceptar lo que está hecho y ajustar el alcance hacia lo construido",
+
+        consequence: "El dev se queda aliviado. Entregáis algo funcional pero diferente a lo esperado. La feature no cumple del todo el objetivo original. Internamente asumes la responsabilidad, aunque no lo digas en voz alta.",
+        effects: { team: +1, trust: -2, debt: -1 },
+      },
+      {
+        text: "Pedir que rehagan lo necesario — fue un error de definición, tuyo",
+
+        consequence: "El dev lo acepta con profesionalidad, aunque con algo de frustración. Pierdes dos días. La feature sale como debía. En la retro mencionas el fallo de definición abiertamente — el equipo lo valora.",
+        effects: { team: -2, trust: 0, debt: +1, delivery: -2 },
+      },
+      {
+        text: "Hacer una sesión de alineamiento ahora y decidir juntos cómo terminar",
+
+        consequence: "Media hora de sesión salva días de trabajo innecesario. Juntos encontráis una solución que cubre el objetivo original aprovechando lo ya hecho. El dev sale satisfecho. Una lección sobre el valor del refinement.",
+        effects: { team: +1, trust: +1, debt: +1, delivery: -2 },
+      }
+    ]
+  },
+  {
+    icon: '🐛', tag: 'Contratiempo', tagClass: 'tag-red',
+    project: 'bug-1',
+    title: 'El bug era un iceberg',
+    situation: "El dev que investigaba el bug de prioridad alta te manda un mensaje: 'Esto es más gordo de lo que parecía. La raíz está en un módulo que no se ha tocado en años. Para arreglarlo bien hay que refactorizar. Calculo entre 2 y 4 días más.'",
+    context: "El fix estaba estimado como S. El bug afecta a procesos de negocio clave. Si se hace mal, el fix puede introducir nuevos problemas.",
+    choices: [
+      {
+        text: "Hacer un fix superficial por encima — la refactorización para más adelante",
+
+        consequence: "El fix sale rápido. El negocio está contento a corto plazo. Pero el módulo sigue siendo una bomba de relojería. Dos sprints después, el mismo módulo genera un incidente más grave. El equipo lo recuerda.",
+        effects: { team: 0, trust: +1, debt: -3, delivery: -1 },
+      },
+      {
+        text: "Asumir la refactorización completa dentro del sprint",
+
+        consequence: "El sprint pierde velocidad y otras historias se retrasan. Pero el módulo queda limpio y estable. En la retro el equipo valora la decisión: 'Ahora ya no da miedo tocarlo.'",
+        effects: { team: -2, trust: 0, debt: +4, delivery: -2 },
+      },
+      {
+        text: "Parar el fix, escalar a arquitectura y planificarlo correctamente",
+
+        consequence: "El bug queda abierto durante días adicionales. El negocio lo nota y hay presión. Pero el problema queda bien dimensionado y la solución que sale es sólida. A largo plazo, la decisión correcta.",
+        effects: { team: +1, trust: -2, debt: 0 },
+      }
+    ]
+  },
+  {
+    icon: '📉', tag: 'Petición', tagClass: 'tag-blue',
+    title: 'El CTO del cliente ha llamado al CEO',
+    trigger: s => s.debt <= 6,
+    situation: "El CEO te llama por la mañana: 'El CTO del cliente me ha contactado directamente. Tienen dudas serias sobre la estabilidad de nuestra plataforma. Me ha pedido un plan de acción. Necesito algo concreto para darle.'",
+    context: "No hay un incidente activo, pero la percepción del cliente es mala. Un plan superficial puede empeorar las cosas. Uno sólido requiere involucrar al equipo técnico.",
+    choices: [
+      {
+        text: "Reservar tiempo del equipo para preparar un plan técnico serio",
+
+        consequence: "El análisis tarda dos días pero el plan es concreto y detallado. El CEO lo presenta al CTO del cliente con confianza. El equipo identifica mejoras reales en el proceso. La relación con el cliente se estabiliza.",
+        effects: { team: 0, trust: +2, debt: +3, delivery: -2 }
+      },
+      {
+        text: "Preparar tú un resumen ejecutivo en 24h sin involucrar al equipo",
+
+        consequence: "El documento llega rápido pero carece de detalle técnico. El CTO del cliente hace preguntas que no puedes responder. El CEO lo nota. La confianza mejora poco — y el problema de fondo sigue sin estar definido.",
+        effects: { team: +1, trust: -1, debt: -1, delivery: 0 }
+      },
+      {
+        text: "Pedir tiempo al cliente: 'Os daremos el plan la semana que viene'",
+
+        consequence: "El cliente lo acepta a regañadientes, pero su CTO está frustrado. La percepción de que no tenéis control técnico se consolida. Cuando el plan llegue, ya llegaréis tarde.",
+        effects: { team: +1, trust: -2, debt: 0 }
+      }
+    ]
+  },
+  {
+    icon: '😤', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Se te olvidó un compromiso',
+    situation: "Ventas te escribe: 'Oye, el cliente me ha recordado que la semana pasada les prometiste incluir un proyecto técnico en este sprint. Lo han comunicado internamente. ¿Está en el backlog?' No está. No lo incluiste.",
+    context: "El sprint ya está planificado y comprometido al 100%. Incluir algo nuevo implica sacar otra historia o añadir presión a un equipo que ya tiene la agenda llena.",
+    choices: [
+      {
+        text: "Asumir el compromiso — añadirlo desplazando la historia menos prioritaria",
+
+        consequence: "El cliente está satisfecho, pero el equipo pierde una historia que ya tenía en marcha. En la retro alguien dice en voz alta lo que todos piensan: '¿Siempre vamos a funcionar así?'",
+        effects: { team: -2, trust: +2, debt: 0, delivery: -2 }
+      },
+      {
+        text: "Ser honesto con el cliente: se te pasó, lo planificas para el siguiente sprint",
+
+        consequence: "Conversación incómoda pero honesta. El cliente y ventas lo aceptan con algo de frustración. En la retro reflexionas sobre cómo documentar los compromisos verbales antes de salir de una reunión.",
+        effects: { team: +1, trust: -2, debt: 0 }
+      },
+      {
+        text: "Pedir al equipo que haga un esfuerzo para incluirlo sin sacar nada del sprint",
+
+        consequence: "El equipo lo intenta. A mitad de sprint hay que admitir que no llega todo. La moral cae, y encima tienes que explicar al cliente por qué no sale. El peor resultado posible.",
+        effects: { team: -3, trust: -1, debt: 0, delivery: -1 }
+      }
+    ]
+  },
+  {
+    icon: '📋', tag: 'Petición', tagClass: 'tag-blue',
+    title: 'Ventas necesita una estimación para ayer',
+    situation: "Ventas te escribe: 'El cliente lleva semanas esperando una estimación y scope para la funcionalidad de exportación de informes. Necesito algo concreto antes del viernes o empieza a perder la fe en nosotros.' No forma parte del sprint actual.",
+    context: "Estimar bien requiere involucrar a los devs — lo que significa sacar tiempo de las historias en curso. Estimar mal puede comprometer al equipo a algo imposible. No estimar puede costarle la relación a ventas.",
+    choices: [
+      {
+        text: "Reservar 1-2 días de un dev para hacer una estimación técnica real",
+
+        consequence: "La estimación llega a tiempo y es sólida. El cliente y ventas lo agradecen. El equipo lo acepta, aunque la interrupción deja una historia a medias. La confianza se refuerza.",
+        effects: { team: -1, trust: +2, debt: 0, delivery: -1 }
+      },
+      {
+        text: "Dar tú mismo una estimación de alto nivel sin consultar al equipo",
+
+        consequence: "Ventas tiene algo que enviar. El cliente queda satisfecho por ahora. Pero los devs, cuando se enteran del número comprometido, ponen los ojos en blanco: 'Eso es el doble de lo que has dicho'. La deuda técnica de las expectativas empieza a crecer.",
+        effects: { team: -1, trust: +1, debt: -2 }
+      },
+      {
+        text: "Decirle a ventas que lo planifiquéis en el siguiente sprint",
+
+        consequence: "El equipo termina el sprint sin interrupciones. Pero ventas tiene que gestionar a un cliente frustrado que lleva semanas esperando. La próxima vez que necesites algo dventas, recordará esta conversación.",
+        effects: { team: +1, trust: -2, debt: 0 }
+      }
+    ]
+  },
+  {
+    icon: '🎬', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'La demo que no estaba lista',
+    situation: "Ventas te escribe esta mañana: 'Oye, he quedado con el cliente mañana para enseñarles los avances del sprint. Están muy expectantes.' Nadie te había avisado. El equipo tiene algo funcional pero con partes sin pulir que se notarían en una demo en vivo.",
+    context: "La demo no estaba en el plan del sprint. El equipo no ha preparado nada específicamente para mostrar. Cancelar puede quedar mal con el cliente, pero presentar algo a medias también tiene sus riesgos.",
+    choices: [
+      {
+        text: "Pedir a ventas que cancele o postponga la demo",
+
+        consequence: "Ventas tiene una conversación incómoda con el cliente. Hay algo de frustración, pero lo acepta. El equipo agradece no haber tenido que improvisar. Quedáis en organizar una demo bien preparada para la sprint review.",
+        effects: { team: +1, trust: -2 }
+      },
+      {
+        text: "Preparar la demo a contrarreloj esta tarde",
+
+        consequence: "El equipo se queda la tarde preparando la demo. Sale bien — el cliente está contento y ventas aliviado. Pero dos historias pierden medio día de desarrollo. En la retro, alguien comenta: 'La próxima vez avisad antes.'",
+        effects: { team: -2, trust: +2, delivery: -1 }
+      },
+      {
+        text: "Dejar que salga — la mockeamos si hace falta",
+
+        consequence: "La demo sale sin incidentes aparentes. El cliente ve lo que necesita ver. Pero internamente el equipo sabe que parte de lo mostrado no era real. Ese tipo de decisiones deja huella en la cultura del equipo.",
+        effects: { team: 0, trust: -1, debt: -3 }
+      }
+    ]
+  },
+  {
+    icon: '💔', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'El dev se ha roto el tobillo',
+    situation: "Recibes un mensaje a las 8 de la mañana: 'Mala noticia — me he roto el tobillo jugando al fútbol este finde. El médico dice que esta semana no puedo trabajar y probablemente la siguiente tampoco.' Lleva la historia más grande del sprint y nadie más la conoce en profundidad.",
+    context: "Estáis a mitad de sprint. La historia tiene trabajo hecho pero está lejos de terminarse. No hay ningún dev que pueda continuar sin una transferencia de conocimiento que llevaría tiempo.",
+    choices: [
+      {
+        text: "Redistribuir el trabajo entre el equipo",
+
+        consequence: "El equipo absorbe el trabajo. Hay quejas contenidas — nadie esperaba cargar con eso. La historia avanza pero más lento de lo esperado. Algunos devs llegan al final del sprint con más horas de las deseables.",
+        effects: { team: -2, trust: 0, delivery: -1 }
+      },
+      {
+        text: "Reducir el alcance de la historia y comunicarlo",
+
+        consequence: "Hablas con ventas y el cliente. La conversación es difícil pero el equipo lo valora — no se les carga con trabajo extra. La historia se replantea y lo que se entrega está bien hecho. El equipo respira.",
+        effects: { team: +1, trust: -2, delivery: -1 }
+      },
+      {
+        text: "Esperar unos días a ver si puede incorporarse en remoto",
+
+        consequence: "Pasáis tres días esperando. El dev intenta conectarse un rato, pero con dolor y medicación no rinde. Para cuando asumís que no va a poder, el sprint está muy comprometido. La historia queda a medias y hay deuda técnica en el código sin terminar.",
+        effects: { team: 0, trust: -1, debt: -1, delivery: -2 }
+      }
+    ]
+  },
+  {
+    icon: '🔔', tag: 'Petición', tagClass: 'tag-blue',
+    title: 'Queja por plazos de entrega',
+    situation: "Ventas te reenvía un mensaje del cliente: 'Llevamos varios sprints con retrasos en lo prometido. Necesito que me expliques qué está pasando.'",
+    context: "Las repriorizaciones y urgencias que has ido aceptando durante el sprint han ido comiendo el margen de entrega. No hay excusa fácil — hay un patrón, y el cliente ya lo ha detectado.",
+    choices: [
+      {
+        text: "Llamar al cliente directamente y reconocer el patrón",
+        consequence: "La conversación es incómoda pero honesta. El cliente aprecia que no te escondas detrás dventas. Acordáis revisar juntos el proceso de priorización. El equipo nota la presión, pero lo entiende.",
+        effects: { team: -1, trust: +2, debt: 0 }
+      },
+      {
+        text: "Preparar un plan de mejora con el equipo y presentarlo a ventas",
+        consequence: "Tardáis un día en tenerlo listo. Ventas lo presenta al cliente como señal de madurez. No es la respuesta inmediata que esperaban, pero el plan da confianza. El equipo se siente parte de la solución.",
+        effects: { team: +1, trust: 0, debt: +1, delivery: -2 }
+      },
+      {
+        text: "Pedirle a ventas que gestione la conversación y explique los imprevistos",
+        consequence: "Ventas lo intenta, pero el cliente quiere hablar con quien toma las decisiones. 'Si el PM no puede explicarlo, no me da confianza', escribe. Ventas está molesto. No has resuelto nada.",
+        effects: { team: +1, trust: -3, debt: 0 }
+      }
+    ]
+  },
+  {
+    icon: '🤒', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Un dev cae enfermo',
+    situation: "Son las 8:45 y recibes un mensaje: 'Mala noticia, tengo fiebre y no voy a poder conectarme hoy. Igual mañana tampoco.' Lleva la historia más grande del sprint y nadie más la ha tocado.",
+    context: "Estáis a mitad de sprint. La historia tiene trabajo hecho pero está lejos de terminarse. El equipo ya va al límite de capacidad.",
+    choices: [
+      {
+        text: "Redistribuir su trabajo entre el equipo",
+        consequence: "El equipo absorbe la carga sin quejarse, pero nota el peso. El sprint no se detiene. El cliente no se entera, y eso se valora.",
+        effects: { team: -1, trust: +1, debt: 0, delivery: -1 }
+      },
+      {
+        text: "Reducir el alcance de su historia y comunicarlo",
+        consequence: "El equipo no carga con trabajo extra. El cliente lo acepta con algo de frustración, pero al menos la comunicación fue proactiva.",
+        effects: { team: 0, trust: -1, debt: 0, delivery: -1 }
+      },
+      {
+        text: "Aplazar el desarrollo a la semana siguiente",
+        consequence: "El equipo respira. Pero la historia no avanza durante días, y la entrega final se ve muy comprometida.",
+        effects: { team: +2, trust: -1, debt: 0, delivery: -2 }
+      }
+    ]
+  },
+  {
+    icon: '📅', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Reunión imprevista de dirección',
+    situation: "El CPO convoca una reunión urgente: lleva semanas recibiendo quejas de clientes sobre la estabilidad y quiere un plan. Pide explícitamente que asista el engineering lead. Tú sabes que está en mitad de un trabajo crítico precisamente sobre eso.",
+    context: "El engineering lead es la persona que mejor entiende el problema técnico. Pero también es quien más cerca está de resolverlo.",
+    choices: [
+      {
+        text: "Hablar con el CPO para excusar al eng-lead",
+        consequence: "El eng-lead se queda resolviendo el problema. La reunión se celebra sin contexto técnico real — el CPO sale con una visión incompleta. La próxima vez pedirá más.",
+        effects: { team: +1, trust: 0, debt: -1 }
+      },
+      {
+        text: "Ir los dos a la reunión",
+        consequence: "La reunión es productiva. El CPO entiende la situación real. Pero el eng-lead pierde medio día justo cuando más se necesitaba su foco técnico.",
+        effects: { team: 0, trust: 0, debt: 0, delivery: -1 }
+      },
+      {
+        text: "Pedir al CPO que se aplace a la semana siguiente",
+        consequence: "El CPO accede a regañadientes. La preocupación sobre estabilidad queda sin respuesta otro sprint más. La tensión con el cliente sigue creciendo.",
+        effects: { team: +1, trust: -1, debt: -1 }
+      }
+    ]
+  },
+  {
+    icon: '🤝', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Prometiste sin consultar',
+    situation: "Ventas te escribe: 'Oye, estuve hablando con el cliente y les confirmé que esa funcionalidad de reportes avanzados estaría lista este sprint. Les dije que tú mismo se lo habías dicho.' No lo recuerdas exactamente así, pero revisando el hilo... tienes razón, lo dijiste.",
+    context: "El equipo no ha visto esta conversación. Cuando preguntas al tech lead, su respuesta es directa: 'Eso es trabajo de dos sprints, como mínimo. Nadie me consultó.'",
+    choices: [
+      {
+        text: "Reconocer el error al cliente y renegociar el plazo",
+        consequence: "Conversación incómoda pero honesta. El cliente lleva mal la noticia, pero lo acepta. El equipo valora que hayas asumido el error sin cargárselo a ellos.",
+        effects: { team: +1, trust: -2, delivery: 0, debt: 0 }
+      },
+      {
+        text: "Presionar al equipo para entregarlo como sea",
+        consequence: "El equipo aprieta. Entregan algo, pero con shortcuts que todos saben que volverán. El cliente queda satisfecho. 'La próxima vez también prometerás por nosotros', dice alguien en la retro.",
+        effects: { team: -2, trust: +2, delivery: -2, debt: 0 }
+      },
+      {
+        text: "Negociar una versión reducida para este sprint",
+        consequence: "El cliente acepta con reservas. El equipo puede cumplir el nuevo alcance, pero pierde un día ajustando la planificación. Nadie queda del todo satisfecho, pero la crisis se contiene.",
+        effects: { team: 0, trust: -1, delivery: -1, debt: +1 }
+      }
+    ]
+  },
+  {
+    icon: '🔀', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Cambiaste las prioridades a mitad de sprint',
+    situation: "A mitad del sprint recibiste una señal clara de un stakeholder clave sobre algo más urgente. Tomaste la decisión en solitario y actualizaste el backlog. Ahora hay dos devs que llevan medio día trabajando en historias que ya no son prioritarias — y acaban de darse cuenta.",
+    context: "El cambio puede tener sentido estratégicamente, pero el equipo no ha participado en la decisión y hay trabajo ya empezado que puede quedar a medias.",
+    choices: [
+      {
+        text: "Mantener el cambio y gestionar las entregas afectadas",
+        consequence: "El stakeholder queda satisfecho con la nueva prioridad. Pero el equipo absorbe la confusión: dos historias quedan incompletas y el sprint pierde velocidad. 'Así no se puede planificar', dice alguien.",
+        effects: { team: -1, trust: +2, delivery: -2, debt: 0 }
+      },
+      {
+        text: "Revertir al plan original y aguantar la presión del stakeholder",
+        consequence: "El equipo recupera el foco y termina lo comprometido. Pero el stakeholder está molesto y tú has perdido credibilidad con él. La conversación de la semana siguiente no es fácil.",
+        effects: { team: +1, trust: -2, delivery: 0, debt: 0 }
+      },
+      {
+        text: "Reunión con el equipo para decidir juntos cómo continuar",
+        consequence: "La sesión lleva una hora. El equipo entiende el contexto y propone una solución intermedia. Nadie sale completamente satisfecho, pero el sprint avanza con todos alineados y sabiendo por qué.",
+        effects: { team: -1, trust: -1, delivery: -1, debt: +2 }
+      }
+    ]
+  },
+  {
+    icon: '📝', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'Los criterios de aceptación eran tuyos',
+    situation: "En la sprint review, el cliente rechaza una historia que el equipo considera terminada. Al revisarla, los criterios de aceptación que escribiste no cubrían dos casos que el cliente daba por supuestos. El dev responsable lleva tres días trabajando en ella.",
+    context: "El equipo ha hecho exactamente lo que se definió. Pero lo que se definió era incompleto. Hay tensión visible entre el desarrollador y el cliente.",
+    choices: [
+      {
+        text: "Asumir el error públicamente y refinar los criterios ahora",
+        consequence: "El dev respira — queda claro que no fue su fallo. El cliente agradece la transparencia. Pierdes tiempo rehaciendo parte de la historia, pero el proceso mejora y hay aprendizaje real.",
+        effects: { team: -1, trust: +1, delivery: -1, debt: +2 }
+      },
+      {
+        text: "Defender lo entregado: se implementó exactamente lo especificado",
+        consequence: "Técnicamente correcto. Pero el cliente siente que no le escucháis. El dev tampoco entiende por qué defiendes algo que sabes que estaba mal definido. La confianza cae en los dos frentes.",
+        effects: { team: +1, trust: -2, delivery: 0, debt: -1 }
+      },
+      {
+        text: "Cocrear los criterios con el equipo y el cliente en una sesión corta",
+        consequence: "Treinta minutos bien aprovechados. El cliente ve que hay proceso. El dev participa en la definición y sale con contexto real. La historia se termina mejor de lo que habría salido de otra forma.",
+        effects: { team: +1, trust: -1, delivery: -1, debt: +1 }
+      }
+    ]
+  },
+  {
+    icon: '🔗', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'La dependencia que no mapeaste',
+    trigger: s => s.delivery <= 6,
+    situation: "El equipo lleva día y medio bloqueado. Una historia crítica del sprint depende de una API de otro equipo interno que no estará lista hasta la semana que viene. Nadie lo identificó en la planificación — era tu responsabilidad mapearlo.",
+    context: "La historia es la de mayor peso del sprint. Con el equipo bloqueado en ese frente, la entrega global está en riesgo.",
+    choices: [
+      {
+        text: "Escalar a dirección para desbloquear la dependencia",
+        consequence: "La escalada funciona — el otro equipo prioriza un endpoint provisional. Pero genera fricción interdepartamental. El responsable del otro equipo te recuerda la próxima semana que le costó un día de trabajo.",
+        effects: { team: 0, trust: -1, delivery: -1, debt: +1 }
+      },
+      {
+        text: "Reasignar al equipo a otras historias mientras tanto",
+        consequence: "El equipo pierde el contexto de la historia bloqueada y se fragmenta entre tareas pequeñas. Pero al final del sprint tienes más entregas de lo que parecía posible. Y aprendiste a diversificar dependencias.",
+        effects: { team: -1, trust: 0, delivery: -2, debt: +2 }
+      },
+      {
+        text: "Construir un mock temporal para no parar",
+        consequence: "El equipo avanza y la historia se entrega. Pero el mock queda integrado más tiempo del previsto — tres sprints después sigue en producción. Alguien lo descubrirá en el peor momento.",
+        effects: { team: +1, trust: 0, delivery: 0, debt: -3 }
+      }
+    ]
+  },
+  {
+    icon: '💪', tag: 'Contratiempo', tagClass: 'tag-red',
+    title: 'El equipo pide más autonomía',
+    situation: "Al final de la retro, el tech lead toma la palabra: 'Llevamos varios sprints en los que las decisiones técnicas importantes las toma el PM solo. Queremos más espacio para participar en arquitectura y priorización técnica. No es una queja — es una petición.'",
+    context: "El equipo tiene razón en parte. Has tomado algunas decisiones técnicas de forma unilateral para ir más rápido. La pregunta es cuánto espacio ceder y cómo.",
+    choices: [
+      {
+        text: "Abrirles espacio real en las decisiones técnicas",
+        consequence: "El equipo gana motivación y ownership. Las sesiones de planificación se alargan pero las decisiones son mejores. El sprint siguiente avanza con más fricción inicial pero más convicción.",
+        effects: { team: +2, trust: 0, delivery: -1, debt: +1 }
+      },
+      {
+        text: "Crear un canal formal de propuestas técnicas",
+        consequence: "El equipo valora la intención pero lo vive como un proceso burocrático, no como autonomía real. El tech lead lo acepta sin entusiasmo: 'Es un avance, supongo.'",
+        effects: { team: +1, trust: +1, delivery: -1, debt: 0 }
+      },
+      {
+        text: "'Este sprint no es el momento — lo hablamos en la próxima retro'",
+        consequence: "El equipo lo interpreta como un no definitivo disfrazado de aplazamiento. La motivación cae. El sprint termina con buenas métricas de entrega — pero a un coste que no aparece en el tablero.",
+        effects: { team: -2, trust: 0, delivery: +1, debt: -1 }
+      }
+    ]
+  },
+  {
+    icon: '🔑', tag: 'Petición', tagClass: 'tag-blue',
+    title: 'El cliente quiere acceso al repositorio',
+    situation: "El CTO del cliente te escribe directamente: 'Para tener más visibilidad del progreso real, necesitaría acceso al repositorio y al tablero de Jira. No para intervenir — solo para seguimiento.' El equipo se entera y la reacción es clara: 'No me parece bien.'",
+    context: "El cliente tiene razones legítimas para pedir visibilidad. El equipo tiene razones legítimas para sentirse auditado. Tienes que decidir antes de que la tensión escale.",
+    choices: [
+      {
+        text: "Conceder acceso de solo lectura con contexto",
+        consequence: "El cliente se tranquiliza y siente que confías en él. Pero el equipo trabaja con la sensación de ser auditado constantemente. La calidad de los commits mejora... por las razones equivocadas.",
+        effects: { team: -1, trust: +2, delivery: 0, debt: 0 }
+      },
+      {
+        text: "Proponer un dashboard de métricas a medida",
+        consequence: "El cliente acepta con algo de reticencia. Alguien del equipo tiene que construirlo, lo que cuesta tiempo de sprint. Pero el resultado es una herramienta útil para ambas partes a largo plazo.",
+        effects: { team: 0, trust: +1, delivery: -1, debt: +1 }
+      },
+      {
+        text: "Rechazar y proponer una llamada de seguimiento semanal",
+        consequence: "El equipo respira aliviado. Pero el cliente interpreta el rechazo como falta de transparencia. 'Si todo va bien, ¿qué tienen que ocultar?' La confianza en el progreso real se erosiona.",
+        effects: { team: +1, trust: -2, delivery: 0, debt: 0 }
+      }
+    ]
+  },
+];
+
+const SIZE_POINTS = { S: 2, M: 3, L: 5 };
+const SPRINT_CAPACITY = 10;
+
+function sprintPoints() {
+  return state.selectedProjects.reduce((sum, id) => {
+    const p = PROJECTS.find(p => p.id === id);
+    return sum + (p ? SIZE_POINTS[p.size] : 0);
+  }, 0);
+}
+
+const PROJECTS = [
+  { id: 'integ-erp', name: 'Integración con ERP de cliente',         size: 'L', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Integración con sistema legacy de terceros. Documentación incompleta, alta incertidumbre técnica.' },
+  { id: 'integ-pmt', name: 'Integración con proveedor de pagos',     size: 'L', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Integración con un proveedor de pasarela de pago. Clave para deprecar el sistema legacy y externalizarlo.' },
+  { id: 'billing',   name: 'Rediseño del módulo de facturación',     size: 'L', tag: 'Tech',    tagClass: 'tag-yellow', desc: 'Refactorización completa del núcleo de facturación. Fundamental para la estabilidad y el roadmap futuro.' },
+  { id: 'migration', name: 'Migración de base de datos',             size: 'L', tag: 'Tech',    tagClass: 'tag-yellow', desc: 'Migración del esquema en producción. Alta complejidad, requiere ventana de mantenimiento coordinada.' },
+  { id: 'api-v2',    name: 'Refactorización de API pública v2',      size: 'L', tag: 'Tech',    tagClass: 'tag-yellow', desc: 'Versión 2 de la API pública. Necesaria para desbloquear integraciones con nuevos clientes.' },
+  { id: 'perf',      name: 'Optimización de rendimiento crítico',    size: 'L', tag: 'Tech',    tagClass: 'tag-yellow', desc: 'Cuellos de botella detectados en producción. Sin mejoras, el tiempo de respuesta seguirá degradándose.' },
+  { id: 'ui',              name: 'Cambio de UI en las apps',               size: 'M', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Nueva funcionalidad solicitada por cliente. Implica coordinación entre equipos de producto y desarrollo.' },
+  { id: 'sso',             name: 'Integración SSO enterprise',             size: 'M', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Single Sign-On para cliente enterprise. Requisito bloqueante para la renovación de contrato.' },
+  { id: 'reporting',       name: 'Módulo de exportación de informes',      size: 'M', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Exportación en CSV y PDF. Muy solicitado por múltiples clientes, alta visibilidad comercial.' },
+  { id: 'notifications',   name: 'Sistema de notificaciones in-app',       size: 'M', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Alertas y notificaciones para usuarios finales. Solicitado por varios clientes en el último QBR.' },
+  { id: 'audit-log',       name: 'Log de auditoría de acciones',           size: 'M', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Registro de acciones de usuario requerido por clientes enterprise para cumplimiento normativo.' },
+  { id: 'refactor-auth',   name: 'Refactorización del módulo de auth',     size: 'M', tag: 'Tech',    tagClass: 'tag-yellow', desc: 'El módulo actual acumula deuda. Varios bugs recientes tienen aquí su origen.' },
+  { id: 'perf-queries',    name: 'Optimización de queries lentas',         size: 'M', tag: 'Tech',    tagClass: 'tag-yellow', desc: 'Queries identificadas en producción que degradan la experiencia en horas punta.' },
+  { id: 'fix-exports',     name: 'Fix en exportaciones de datos',          size: 'M', tag: 'Fix',     tagClass: 'tag-red',    desc: 'Fallos intermitentes en exportaciones grandes. Varios clientes lo han reportado en los últimos sprints.' },
+  { id: 'fields',          name: 'Nuevos campos para la web',              size: 'S', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Modificación de API para exponer nuevos campos al frontend. Alcance acotado, estimación ajustada.' },
+  { id: 'email-templates', name: 'Actualización de plantillas de email',   size: 'S', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Plantillas de email transaccional desactualizadas. Impacto en imagen de marca y comunicación con usuarios.' },
+  { id: 'onboarding-copy', name: 'Mejora de textos de onboarding',         size: 'S', tag: 'Feature', tagClass: 'tag-blue',   desc: 'Revisión del copy en el flujo de alta. Reduce fricción en los primeros pasos del usuario.' },
+  { id: 'cache-config',    name: 'Configuración de caché de API',          size: 'S', tag: 'Tech',    tagClass: 'tag-yellow', desc: 'Ajuste de TTL y estrategia de invalidación. Reduce carga en base de datos sin cambios de arquitectura.' },
+  { id: 'bug-1',           name: 'Fix de bug de prioridad alta',           size: 'S', tag: 'Fix',     tagClass: 'tag-red',    desc: 'Bug con impacto directo en negocio. Superficie conocida, pero puede haber complejidad oculta.' },
+  { id: 'bug-2',           name: 'Fix de bug fuera de SLA',                size: 'S', tag: 'Fix',     tagClass: 'tag-red',    desc: 'Bug de pequeño impacto pero fuera del SLA de un cliente clave.' },
+  { id: 'fix-pagination',  name: 'Fix de paginación en listados',          size: 'S', tag: 'Fix',     tagClass: 'tag-red',    desc: 'Bug conocido en listados con más de 500 registros. Afecta a tres clientes enterprise.' },
+  { id: 'fix-timezone',    name: 'Fix de zona horaria en reportes',        size: 'S', tag: 'Fix',     tagClass: 'tag-red',    desc: 'Los reportes muestran timestamps incorrectos para clientes en zonas UTC±. Reportado repetidamente.' },
+];
+
+const OUTCOMES = [
+  {
+    icon: '🏆', title: 'El PM Equilibrado',
+    condition: s => s.team >= 8 && s.trust >= 8 && s.debt >= 6,
+    message: "Has navegado el caos sin sacrificar a tu equipo, tus stakeholders ni tu entrega. No todos los sprints son así — pero has demostrado que es posible. Los mejores PMs no eligen entre personas y resultados. Trabajan duro para no tener que elegir.",
+    lessons: [
+      "Proteger al equipo y la confianza de los stakeholders no son objetivos opuestos — se refuerzan mutuamente.",
+      "La comunicación proactiva genera más confianza que los heroísmos.",
+      "Un equipo descansado y alineado entrega más a largo plazo que uno presionado."
+    ]
+  },
+  {
+    icon: '✅', title: 'El Sprint Sólido',
+    condition: s => s.team >= 6 && s.trust >= 6 && s.debt >= 5,
+    message: "No fue el sprint perfecto — pero fue un sprint profesional. El equipo funcionó, los clientes confiaron, lo prometido llegó y la plataforma aguantó. Eso es más difícil de lo que parece cuando el caos llama a la puerta. La consistencia no es glamurosa, pero es la base de todo lo demás.",
+    lessons: [
+      "La consistencia en la ejecución vale más que los heroísmos puntuales.",
+      "Un sprint sólido no requiere sacrificios — requiere claridad en las prioridades.",
+      "Los mejores sprints no se recuerdan porque nadie tuvo que apagar un incendio."
+    ]
+  },
+  {
+    icon: '🛡️', title: 'El Defensor del Equipo',
+    condition: s => s.team >= 8 && s.trust <= 4,
+    message: "Tu equipo confía en ti profundamente — y eso es un activo real. Pero tus stakeholders están perdiendo la fe. Los grandes PMs necesitan ambas cosas. Un equipo feliz que no entrega sigue perdiendo presupuesto, personas y, al final, a su PM.",
+    lessons: [
+      "La salud del equipo importa — pero los stakeholders también necesitan ver resultados.",
+      "Decir 'no' a los stakeholders requiere una alternativa creíble, no solo un límite.",
+      "La confianza se construye con consistencia y transparencia, no solo con protección."
+    ]
+  },
+  {
+    icon: '🤵', title: 'El Complaciente Ejecutivo',
+    condition: s => s.trust >= 8 && s.team <= 4,
+    message: "Tus stakeholders están contentos — por ahora. Pero tu equipo está al límite. Los mejores se van primero. Los que se quedan ralentizan. Estás gastando un capital de confianza que no es fácil de recuperar.",
+    lessons: [
+      "Decir que sí a cada petición ejecutiva erosiona la confianza del equipo con el tiempo.",
+      "Un equipo desmotivado entrega de forma impredecible — lo que los stakeholders acaban notando.",
+      "La confianza de tu equipo es un activo estratégico, no un 'nice to have'."
+    ]
+  },
+  {
+    icon: '💥', title: 'Colapso de Sprint',
+    condition: s => s.team <= 3 && s.trust <= 3,
+    message: "Tanto el equipo como los stakeholders han perdido la fe. No es un solo error — es una acumulación de decisiones que erosionaron confianza en todos los frentes a la vez. La recuperación es posible, pero costará mucho más que un sprint.",
+    lessons: [
+      "La priorización es la responsabilidad central de un PM — defiéndela con fuerza.",
+      "Cada decisión difícil aplazada se convierte en dos decisiones difíciles después.",
+      "El alineamiento con tu equipo y tus stakeholders debe construirse, no improvisarse."
+    ]
+  },
+  {
+    icon: '⚡', title: 'El Sprint a Trompicones',
+    condition: () => true,
+    message: "El sprint cerró — y eso cuenta. Pero el camino fue más irregular de lo necesario. Decisiones a medias, prioridades esquivas, más improvisación de la deseable. No es un fracaso, pero tampoco es el PM que quieres ser.",
+    lessons: [
+      "Los sprints mediocres no se deben a la mala suerte — se deben a la falta de claridad en las prioridades.",
+      "La consistencia en el proceso genera confianza interna y externa. La improvisación la erosiona.",
+      "Un resultado 'suficientemente bueno' sprint a sprint no es lo mismo que un equipo que progresa de verdad."
+    ]
+  }
+];
+
+const METRIC_FEEDBACK = {
+  team: [
+    { min: 9,  max: 10, text: "Tu equipo está motivado y con foco. Eso se nota en la velocidad, en la calidad y en el ambiente." },
+    { min: 7,  max: 8,  text: "Tu equipo funciona bien. Sin heroísmos ni dramas — solo gente haciendo bien su trabajo." },
+    { min: 4,  max: 6,  text: "El equipo está aguantando, pero nota la presión. Si no cambias algo, empezarás a ver las consecuencias." },
+    { min: 1,  max: 3,  text: "Tu equipo está al límite. Las conversaciones difíciles están llegando y los mejores ya tienen el CV actualizado." },
+    { min: 0,  max: 0,  text: "Tu equipo ha colapsado. Un sprint puede romperse — un equipo tarda meses en reconstruirse." },
+  ],
+  trust: [
+    { min: 9,  max: 10, text: "Tus clientes confían en ti. Eso te da margen para tomar decisiones difíciles sin perder la relación." },
+    { min: 7,  max: 8,  text: "La relación con los clientes es sólida. Siguen creyendo en lo que les prometes." },
+    { min: 4,  max: 6,  text: "Los clientes empiezan a dudar. Cada retraso o sorpresa negativa erosiona un poco más esa confianza." },
+    { min: 1,  max: 3,  text: "Los clientes han perdido la fe. Las llamadas ya no son para pedir cosas — son para pedir explicaciones." },
+    { min: 0,  max: 0,  text: "La confianza se ha roto. El problema ya no es técnico ni de producto — es relacional." },
+  ],
+  debt: [
+    { min: 9,  max: 10, text: "La plataforma está en forma. Tu equipo puede avanzar rápido sin miedo a romper cosas." },
+    { min: 7,  max: 8,  text: "La base técnica aguanta bien. No hay incendios que apagar y el equipo trabaja con tranquilidad." },
+    { min: 4,  max: 6,  text: "La deuda se acumula. Cada atajo que tomaste bajo presión está esperando su momento para cobrar la factura." },
+    { min: 1,  max: 3,  text: "La estabilidad de la plataforma pende de un hilo. Los bugs te comen el día a día y el equipo pierde velocidad." },
+    { min: 0,  max: 0,  text: "La plataforma ha colapsado. Todo lo demás puede esperar — apagar este fuego es ahora tu único trabajo." },
+  ],
+};
+
+function getMetricFeedback(key, value) {
+  return METRIC_FEEDBACK[key].find(f => value >= f.min && value <= f.max)?.text ?? '';
+}
+
+const GAME_OVER = {
+  team: {
+    icon: '💀',
+    title: 'El Motor del Burnout',
+    metric: 'Equipo',
+    message: "El equipo ha llegado a su límite. Las bajas, el silencio en los stand-ups y las conversaciones que no quieres tener ya son inevitables. Un sprint puede romperse — un equipo tarda meses en reconstruirse.",
+    lessons: [
+      "El ritmo sostenible no es idealismo — es el único modelo que funciona a largo plazo.",
+      "La salud del equipo es un indicador adelantado. Cuando llega a cero, el daño ya está hecho.",
+      "Los mejores ingenieros tienen opciones. Se van de entornos donde no se les respeta."
+    ]
+  },
+  trust: {
+    icon: '💔',
+    title: 'Ruptura de Confianza',
+    metric: 'Clientes',
+    message: "El cliente ha perdido la confianza completamente. Lo que tardó meses en construirse se ha roto en días. Las llamadas al CEO, los correos formales y las revisiones de contrato ya están en marcha.",
+    lessons: [
+      "La confianza de los clientes se construye con consistencia y transparencia — y se destruye con sorpresas.",
+      "Prometer menos y entregar más es siempre mejor estrategia que al revés.",
+      "Cuando la confianza se rompe, el problema deja de ser técnico y pasa a ser relacional."
+    ]
+  },
+  debt: {
+    icon: '⚡',
+    title: 'Colapso Técnico',
+    metric: 'Estabilidad',
+    message: "La plataforma ha colapsado. Lo que empezó como deuda técnica acumulada se ha convertido en un incidente crítico. El equipo está apagando fuegos, los clientes lo notan y todo lo demás puede esperar.",
+    lessons: [
+      "La estabilidad técnica no es un lujo — es la base sobre la que todo lo demás se construye.",
+      "Cada atajo tomado bajo presión tiene un coste diferido que suele llegar en el peor momento.",
+      "Cuando la plataforma falla, no hay entrega posible. El delivery empieza por la estabilidad."
+    ]
+  }
+};
+
+// ════════════════════════════════════════════════
+// ESTADO DEL JUEGO
+// ════════════════════════════════════════════════
+
+let state = {};
+
+function initState() {
+  const urgencies = pickUrgencyDays();
+  const schedule  = Array.from({ length: 10 }, (_, i) =>
+    urgencies.includes(i + 1) ? 'urgency' : 'normal'
+  );
+  state = {
+    sprintCount:       1,
+    day:               1,
+    schedule,
+    availableProjects: PROJECTS.map(p => p.id),
+    selectedProjects:  [],
+    shownProjects:     [],
+    scenarioPool:      [],
+    currentScenario:   null,
+    normalPool:        shuffle([...NORMAL_DAYS]),
+    normalIdx:         0,
+    metrics:           { team: 7, trust: 7, debt: 7 },
+    deliveryProgress:  0,
+    deliveryFloor:     0,
+    projectStatus:     {},
+    history:           []
+  };
+}
+
+function updateSprintCounter() {
+  const el = document.getElementById('sprint-counter');
+  if (!el) return;
+  if (state.sprintCount === 1) {
+    el.textContent = '';
+  } else {
+    el.textContent = `Sprint #${state.sprintCount}`;
+  }
+}
+
+function continueNextSprint() {
+  state.availableProjects = state.availableProjects.filter(
+    id => !state.selectedProjects.includes(id)
+  );
+  if (state.availableProjects.length < 3) {
+    state.availableProjects = PROJECTS.map(p => p.id);
+  }
+  const urgencies = pickUrgencyDays();
+  const schedule  = Array.from({ length: 10 }, (_, i) =>
+    urgencies.includes(i + 1) ? 'urgency' : 'normal'
+  );
+  state.sprintCount++;
+  state.day              = 1;
+  state.schedule         = schedule;
+  state.selectedProjects = [];
+  state.shownProjects    = [];
+  state.scenarioPool     = [];
+  state.currentScenario  = null;
+  state.normalPool       = shuffle([...NORMAL_DAYS]);
+  state.normalIdx        = 0;
+  state.projectStatus    = {};
+  state.history          = [];
+  state.deliveryProgress = 0;
+  state.deliveryFloor    = 0;
+  _lastBarPct            = 0;
+  updateSprintCounter();
+  showProjectSelect();
+}
+
+function pickUrgencyDays() {
+  return shuffle([2,3,4,5,6,7,8,9]).slice(0, 6);
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+// ════════════════════════════════════════════════
+// MÉTRICAS
+// ════════════════════════════════════════════════
+
+function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+
+function metricColor(key, val) {
+  return val >= 7 ? 'var(--green)' : val >= 3 ? 'var(--yellow)' : 'var(--red)';
+}
+
+const MLABELS = {
+  team:  { icon: '👥', label: 'Equipo',      desc: 'Moral y bienestar del equipo. Un equipo con foco y calma es más productivo y estable.' },
+  trust: { icon: '🤝', label: 'Clientes',    desc: 'Relación con los clientes y su confianza en el trabajo de la empresa.' },
+  debt:  { icon: '🛡️', label: 'Estabilidad', desc: 'Solidez técnica del sistema. Una plataforma estable reduce bugs, facilita el trabajo y aumenta la velocidad de entrega.' }
+};
+
+function renderMetrics(id, showDesc = false, highlightKey = null, deltas = null, blinkDeltas = null) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = Object.entries(state.metrics).map(([key, val]) => {
+    const m = MLABELS[key];
+    const color = metricColor(key, val);
+    const stateClass = key === highlightKey ? ' metric-failed'
+      : val < 3  ? ' metric-alert'
+      : val < 7  ? ' metric-warn'
+      : ' metric-good';
+    const d = deltas ? (deltas[key] || 0) : null;
+    const deltaInline = d !== null && d !== 0
+      ? `<span class="metric-delta ${d > 0 ? 'delta-pos' : 'delta-neg'}">${d > 0 ? '+' : ''}${d}</span>`
+      : '';
+    const bd = blinkDeltas ? (blinkDeltas[key] || 0) : 0;
+    return `
+      <div class="metric${stateClass}" data-tooltip="${m.desc}">
+        <div class="metric-top">
+          <span class="metric-name"><span class="metric-icon">${m.icon}</span><span class="metric-label"> ${m.label}</span></span>
+          ${deltaInline}
+        </div>
+        <div class="metric-track">
+          ${Array.from({length: 10}, (_, i) => {
+            const filled = i < val;
+            const bg = filled ? `background:${color}` : '';
+            let blinkCls = '';
+            if (bd > 0 && i >= val && i < val + bd)       blinkCls = ' seg-blink-add';
+            else if (bd < 0 && i >= val + bd && i < val)  blinkCls = ' seg-blink-remove';
+            return `<div class="metric-seg${filled ? ' filled' : ''}${blinkCls}" style="${bg}"></div>`;
+          }).join('')}
+        </div>
+        ${showDesc ? `<div class="metric-desc">${m.desc}</div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+function applyEffects(fx) {
+  state.metrics.team  = clamp(state.metrics.team  + (fx.team     || 0), 0, 10);
+  state.metrics.trust = clamp(state.metrics.trust + (fx.trust    || 0), 0, 10);
+  state.metrics.debt  = clamp(state.metrics.debt  + (fx.debt     || 0), 0, 10);
+  if (fx.delivery) state.deliveryProgress = clamp(state.deliveryProgress + fx.delivery, 0, SPRINT_CAPACITY);
+}
+
+function getProjectDeliveryStatus(id, finalResolution = false) {
+  let cumulative = 0;
+  for (const pid of state.selectedProjects) {
+    const p = PROJECTS.find(p => p.id === pid);
+    const start = cumulative;
+    cumulative += SIZE_POINTS[p.size];
+    if (pid === id) {
+      if (state.deliveryFloor >= cumulative) return 'delivered';
+      return null;
+    }
+  }
+  return null;
+}
+
+// ════════════════════════════════════════════════
+// TIMELINE
+// ════════════════════════════════════════════════
+
+function renderTimeline(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const dot = d => {
+    const cls = d < state.day ? 'done' : d === state.day ? 'current' : '';
+    return `<div class="tl-dot ${cls}"></div>`;
+  };
+  const w1 = [1,2,3,4,5].map(dot).join('');
+  const w2 = [6,7,8,9,10].map(dot).join('');
+  el.innerHTML = `
+    <div class="tl-dots">${w1}<div class="tl-sep"></div>${w2}</div>
+    <div class="tl-label">DÍA ${state.day}/10 · ${state.day <= 5 ? 'SEM.1' : 'SEM.2'}</div>`;
+}
+
+let _lastBarPct = 0;
+
+function renderSprintBoard(id, showCapacity = false) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const STATUS_LABELS = {
+    delivered: { text: 'Completado',   cls: 'delivered' },
+    failed:    { text: 'No entregado', cls: 'failed'    },
+  };
+  const selected = state.selectedProjects.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean);
+  const itemsHtml = selected.length
+    ? selected.map(p => {
+        const s = showCapacity ? null : getProjectDeliveryStatus(p.id);
+        const lbl = STATUS_LABELS[s];
+        const dotCls = lbl ? lbl.cls : 'pending';
+        const statusText = lbl ? lbl.text : '— En progreso';
+        const statusCls  = lbl ? lbl.cls : 'pending';
+        return `
+          <div class="sb-item" style="grid-column: span ${SIZE_POINTS[p.size]}" data-name="${p.name}" onclick="toggleSbTooltip(event, this)">
+            <div class="sb-item-top">
+              <span class="tag ${p.tagClass} sb-item-tag" data-short="${p.tag[0]}">${p.tag}</span>
+              <span class="sb-item-size">${p.size}</span>
+              <span class="sb-item-dot ${dotCls}"></span>
+            </div>
+            <div class="sb-item-name">${p.name}</div>
+            <span class="sb-item-status ${statusCls}">${statusText}</span>
+          </div>`;
+      }).join('')
+    : `<div class="sb-item empty" style="grid-column: span 10"><span class="sb-item-empty-label">— sin proyectos —</span></div>`;
+
+  const barPts = showCapacity ? sprintPoints() : state.deliveryProgress;
+  const barPct = Math.min(100, (barPts / SPRINT_CAPACITY) * 100);
+  const barFillCls = barPts >= SPRINT_CAPACITY ? ' full' : '';
+  const barLabel = showCapacity ? `${barPts} / ${SPRINT_CAPACITY} pts` : `${barPts} / ${SPRINT_CAPACITY}`;
+  const labelHtml = `
+    <div class="sprint-board-header">
+      <span class="sprint-board-label">Sprint</span>
+      <span class="sb-capacity-label">${barLabel}</span>
+    </div>`;
+  const initialPct = showCapacity ? barPct : _lastBarPct;
+  const capacityHtml = `
+    <div class="sb-capacity">
+      <div class="sb-capacity-track"><div class="sb-capacity-fill${barFillCls}" style="width:${initialPct}%"></div></div>
+    </div>`;
+
+  el.innerHTML = `
+    <div class="sprint-board">
+      ${labelHtml}
+      <div class="sprint-board-items">${itemsHtml}</div>
+      ${capacityHtml}
+    </div>`;
+
+  if (!showCapacity) {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const fill = el.querySelector('.sb-capacity-fill');
+      if (fill) fill.style.width = barPct + '%';
+    }));
+    _lastBarPct = barPct;
+  }
+}
+
+// ════════════════════════════════════════════════
+// PANTALLAS
+// ════════════════════════════════════════════════
+
+
+const GAME_HEADER_SCREENS = new Set([
+  'screen-sprint-start', 'screen-day', 'screen-scenario', 'screen-consequence', 'screen-weekend'
+]);
+
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const b = document.body;
+  b.classList.remove('theme-gameover', 'theme-weekend', 'theme-results');
+  if (id === 'screen-gameover')                                     b.classList.add('theme-gameover');
+  else if (id === 'screen-weekend')                                 b.classList.add('theme-results');
+  else if (id === 'screen-results' || id === 'screen-sprint-close') b.classList.add('theme-results');
+  if (GAME_HEADER_SCREENS.has(id)) b.classList.add('game-header-active');
+  else                             b.classList.remove('game-header-active');
+  hideGameplayBar();
+  if (document._slackShowHook) document._slackShowHook(id);
+}
+
+function showGameplayBar(deltas = null, blinkDeltas = null) {
+  renderTimeline('gh-timeline');
+  renderMetrics('gh-metrics', false, null, deltas, blinkDeltas);
+  renderSprintBoard('gh-sprint');
+  renderTimeline('gb-timeline');
+  renderMetrics('gb-metrics', false, null, deltas, blinkDeltas);
+  renderSprintBoard('gb-sprint');
+  const bar = document.getElementById('gameplay-bar');
+  bar.classList.add('active');
+  document.body.classList.add('gameplay-bar-active');
+  requestAnimationFrame(() => {
+    if (window.matchMedia('(max-width: 600px)').matches)
+      document.body.style.paddingTop = bar.offsetHeight + 'px';
+  });
+}
+
+function hideGameplayBar() {
+  document.getElementById('gameplay-bar').classList.remove('active');
+  document.body.classList.remove('gameplay-bar-active');
+  document.body.style.paddingTop = '';
+}
+
+function switchTab(btn, id) {
+  btn.closest('.tab-nav').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.closest('.tab-nav').nextElementSibling.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-' + id).classList.add('active');
+}
+
+// ════════════════════════════════════════════════
+// FLUJO DEL JUEGO
+// ════════════════════════════════════════════════
+
+let tutStep = 1;
+const TUT_TOTAL = 4;
+
+function showTutorial() {
+  initState();
+  updateSprintCounter();
+  tutStep = 1;
+  renderTutorialPips();
+  document.querySelectorAll('.tutorial-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('tstep-1').classList.add('active');
+  document.getElementById('tut-back-label').textContent = 'MENÚ';
+  document.getElementById('tut-next').textContent = 'SIGUIENTE →';
+  show('screen-tutorial');
+}
+
+function skipTutorial() {
+  show('screen-project-select');
+  showProjectSelect();
+}
+
+function renderTutorialPips() {
+  document.getElementById('tut-pips').innerHTML =
+    Array.from({ length: TUT_TOTAL }, (_, i) => {
+      const cls = i + 1 < tutStep ? 'done' : i + 1 === tutStep ? 'current' : '';
+      return `<div class="tut-pip ${cls}"></div>`;
+    }).join('');
+}
+
+function tutNav(dir) {
+  if (dir === 1 && tutStep === TUT_TOTAL) { showProjectSelect(); return; }
+  if (dir === -1 && tutStep === 1) { show('screen-title'); return; }
+  document.getElementById('tstep-' + tutStep).classList.remove('active');
+  tutStep = Math.max(1, Math.min(TUT_TOTAL, tutStep + dir));
+  document.getElementById('tstep-' + tutStep).classList.add('active');
+  if (tutStep === 3) renderMetrics('tut-metrics', true);
+  renderTutorialPips();
+  document.getElementById('tut-back-label').textContent = tutStep === 1 ? 'MENÚ' : 'ATRÁS';
+  document.getElementById('tut-next').textContent = tutStep === TUT_TOTAL ? '> JUGAR' : 'SIGUIENTE →';
+}
+
+function showIndicators() {
+  initState();
+  updateSprintCounter();
+  renderMetrics('indicators-metrics', true);
+  show('screen-indicators');
+}
+
+function showProjectSelect() {
+  document.getElementById('ps-title').textContent =
+    `Planificación del sprint #${state.sprintCount}`;
+  renderMetrics('ps-metrics', false);
+
+  const available = state.availableProjects;
+  state.shownProjects = available.length <= 6
+    ? [...available]
+    : shuffle([...available]).slice(0, 6);
+  state.selectedProjects = [];
+
+  renderProjectSelectGrid();
+  renderSprintBoard('ps-sprint-board', true);
+  updateSelectCounter();
+  show('screen-project-select');
+}
+
+function renderProjectSelectGrid() {
+  const grid = document.getElementById('project-select-grid');
+  const projects = PROJECTS.filter(p => state.shownProjects.includes(p.id));
+  grid.innerHTML = projects.map(p => {
+    const isSelected = state.selectedProjects.includes(p.id);
+    const isDisabled = !isSelected && sprintPoints() + SIZE_POINTS[p.size] > SPRINT_CAPACITY;
+    const cls = isSelected ? ' selected' : isDisabled ? ' disabled' : '';
+    return `
+      <button class="project-card${cls}" onclick="toggleProject('${p.id}')">
+        <div class="project-card-top">
+          <span class="tag ${p.tagClass}">${p.tag}</span>
+          <span class="sb-item-size">${p.size} · ${SIZE_POINTS[p.size]}pts</span>
+        </div>
+        <div class="project-card-name">${p.name}</div>
+        <div class="project-card-desc">${p.desc}</div>
+      </button>`;
+  }).join('');
+}
+
+function toggleProject(id) {
+  if (state.selectedProjects.includes(id)) {
+    state.selectedProjects = state.selectedProjects.filter(x => x !== id);
+  } else {
+    const p = PROJECTS.find(p => p.id === id);
+    if (sprintPoints() + SIZE_POINTS[p.size] > SPRINT_CAPACITY) return;
+    state.selectedProjects.push(id);
+  }
+  updateProjectCardClasses();
+  renderSprintBoard('ps-sprint-board', true);
+  updateSelectCounter();
+}
+
+function updateProjectCardClasses() {
+  const projects = PROJECTS.filter(p => state.shownProjects.includes(p.id));
+  projects.forEach(p => {
+    const btn = document.querySelector(`#project-select-grid .project-card[onclick="toggleProject('${p.id}')"]`);
+    if (!btn) return;
+    const isSelected = state.selectedProjects.includes(p.id);
+    const isDisabled = !isSelected && sprintPoints() + SIZE_POINTS[p.size] > SPRINT_CAPACITY;
+    btn.classList.toggle('selected', isSelected);
+    btn.classList.toggle('disabled', isDisabled);
+  });
+}
+
+function updateSelectCounter() {
+  document.getElementById('confirm-projects-btn').disabled = state.selectedProjects.length < 1;
+}
+
+function confirmProjectSelection() {
+  state.projectStatus = {};
+  state.scenarioPool  = buildScenarioPool();
+  showSprintStart();
+}
+
+function buildScenarioPool() {
+  return shuffle(SCENARIOS.filter(sc =>
+    !sc.project || state.selectedProjects.includes(sc.project)
+  ));
+}
+
+
+
+function runDay() {
+  state.schedule[state.day - 1] === 'urgency' ? showScenario() : showNormalDay();
+}
+
+function pickNextNormalDay() {
+  const m = state.metrics;
+  const triggered  = state.normalPool.find(nd => nd.trigger && nd.trigger(m));
+  if (triggered) {
+    state.normalPool = state.normalPool.filter(n => n !== triggered);
+    return triggered;
+  }
+  const randomPool = state.normalPool.filter(nd => !nd.trigger);
+  const ev = randomPool[state.normalIdx % randomPool.length];
+  state.normalIdx++;
+  return ev;
+}
+
+function showNormalDay() {
+  const d = state.day;
+  const ev = pickNextNormalDay();
+
+  applyEffects(ev.effects);
+  state.deliveryProgress = clamp(state.deliveryProgress + 1, 0, SPRINT_CAPACITY);
+  state.deliveryFloor    = Math.max(state.deliveryFloor, state.deliveryProgress);
+
+  const dTagEl = document.getElementById('d-tag');
+  dTagEl.textContent = ev.tag;
+  dTagEl.className   = `tag ${ev.tagClass}`;
+  const dayColorCls = ev.tagClass.replace('tag-', 'card-');
+  document.getElementById('d-tab').className  = `scenario-tab ${dayColorCls}`;
+  document.querySelector('.day-card').className = `day-card ${dayColorCls}`;
+  document.getElementById('d-icon').textContent     = ev.icon;
+  document.getElementById('d-title').textContent   = ev.title;
+  document.getElementById('d-summary').textContent = ev.summary;
+  document.getElementById('d-effects').innerHTML   = '';
+
+  const lbl = d === 5 ? '> FIN SEMANA 1' : '> DÍA SIGUIENTE';
+  document.getElementById('d-btn').textContent = lbl;
+
+  state.history.push({ day: d, scenario: ev.title, choice: '(sin urgencia)', isNormal: true });
+  show('screen-day');
+  showGameplayBar(ev.effects);
+}
+
+function checkGameOver() {
+  const m = state.metrics;
+  if (m.team  <= 0) return 'team';
+  if (m.trust <= 0) return 'trust';
+  if (m.debt  <= 0) return 'debt';
+  return null;
+}
+
+function showGameOver(metric) {
+  resolveProjectStatuses();
+  const go = GAME_OVER[metric];
+
+  document.getElementById('go-icon').textContent    = go.icon;
+  document.getElementById('go-title').textContent   = go.title;
+  document.getElementById('go-message').textContent = go.message;
+  document.getElementById('go-metric-label').textContent =
+    `▼  ${go.metric} llegó a cero — sprint interrumpido  ▼`;
+
+  renderMetrics('gameover-metrics', false, metric);
+
+  const urgent = state.history.filter(h => !h.isNormal);
+  document.getElementById('go-history-list').innerHTML = urgent.length
+    ? urgent.map(h => `
+        <div class="history-row">
+          <span class="history-day">DÍA ${h.day}</span>
+          <div>
+            <div class="history-scenario">${h.scenario}</div>
+            <div class="history-choice">${h.choice}</div>
+          </div>
+        </div>`).join('')
+    : '<p class="muted" style="padding:12px 0">Sin urgencias registradas hasta este punto.</p>';
+
+  const goMetricLabels = { team: '👥 Equipo', trust: '🤝 Clientes', debt: '🛡️ Estabilidad' };
+  document.getElementById('go-lessons-list').innerHTML =
+    Object.entries(state.metrics)
+      .map(([key, val]) => `<li><strong>${goMetricLabels[key]}:</strong> ${getMetricFeedback(key, val)}</li>`)
+      .join('');
+
+  renderDeliveries('gameover-deliveries');
+  show('screen-gameover');
+}
+
+function advanceDay() {
+  const go = checkGameOver();
+  if (go) { showGameOver(go); return; }
+  if (state.day === 5)  { showWeekend(); return; }
+  if (state.day === 10) { showSprintClose(); return; }
+  state.day++;
+  runDay();
+}
+
+function pickNextScenario() {
+  const m = state.metrics;
+
+  // Triggered scenarios only appear when their condition is met — never randomly
+  const triggered  = state.scenarioPool.find(sc =>  sc.trigger && sc.trigger(m));
+  const randomPool = state.scenarioPool.filter(sc => !sc.trigger);
+  const sc         = triggered || randomPool[0] || state.scenarioPool[0];
+
+  state.scenarioPool    = state.scenarioPool.filter(s => s !== sc);
+  state.currentScenario = sc;
+}
+
+function escHTML(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function typewriter(el, speed = 16) {
+  const full = el.textContent;
+  el.textContent = '';
+  let i = 0;
+  const tick = () => { if (i < full.length) { el.textContent += full[i++]; setTimeout(tick, speed); } };
+  tick();
+}
+
+function renderSituation(text) {
+  // Matches: [narrative]: '[speech]' [optional epilogue]
+  // Greedy on speech so it captures up to the LAST closing quote
+  const m = text.match(/^(.+?):\s*'([\s\S]+)'([\s\S]*)$/);
+  if (!m) return `<span>${escHTML(text)}</span>`;
+  const epilogue = m[3].trim();
+  let html = `<span class="situation-narrative">${escHTML(m[1])}:</span><div class="speech-bubble">&ldquo;${escHTML(m[2])}&rdquo;</div>`;
+  if (epilogue) html += `<span class="situation-narrative situation-epilogue">${escHTML(epilogue)}</span>`;
+  return html;
+}
+
+function showScenario() {
+  pickNextScenario();
+  const sc = state.currentScenario;
+  state.deliveryProgress = clamp(state.deliveryProgress + 1, 0, SPRINT_CAPACITY);
+  state.deliveryFloor    = Math.max(state.deliveryFloor, state.deliveryProgress);
+
+  document.getElementById('s-icon').textContent = sc.icon;
+  document.getElementById('s-title').textContent = sc.title;
+  const tagEl = document.getElementById('s-tag');
+  tagEl.textContent = sc.tag;
+  tagEl.className = `tag ${sc.tagClass}`;
+
+  const colorCls = sc.tagClass.replace('tag-', 'card-');
+  document.querySelector('.scenario-card').className = `scenario-card ${colorCls}`;
+  document.getElementById('s-tab').className = `scenario-tab ${colorCls}`;
+
+  document.getElementById('s-situation').innerHTML = renderSituation(sc.situation);
+  const bubble = document.querySelector('#s-situation .speech-bubble');
+  if (bubble) typewriter(bubble);
+  document.getElementById('s-context').textContent = sc.context;
+
+
+  document.getElementById('choices-container').innerHTML = sc.choices.map((c, i) => `
+    <button class="choice-btn" onclick="choose(${i})">
+      <div class="choice-text">${c.text}</div>
+    </button>`).join('');
+
+  show('screen-scenario');
+  showGameplayBar();
+}
+
+function choose(i) {
+  const sc     = state.currentScenario;
+  const choice = sc.choices[i];
+
+  state.history.push({ day: state.day, scenario: sc.title, choice: choice.text, isNormal: false });
+
+  document.getElementById('c-project').innerHTML = '';
+
+  document.getElementById('c-chosen').textContent      = choice.text;
+  document.getElementById('c-consequence').textContent = choice.consequence;
+
+  const lbl = state.day === 5 ? '> FIN SEMANA 1' : '> DÍA SIGUIENTE';
+  document.getElementById('cs-btn').textContent = lbl;
+  document.getElementById('cs-btn').disabled = true;
+
+  show('screen-consequence');
+  showGameplayBar(null, choice.effects);
+
+  setTimeout(() => {
+    applyEffects(choice.effects);
+    showGameplayBar(choice.effects);
+    document.getElementById('cs-btn').disabled = false;
+  }, 950);
+}
+
+function showWeekend() {
+  const s = state.metrics;
+
+
+  function assess(key) {
+    const v = s[key];
+    if (key === 'debt') {
+      if (v >= 7) return ['✅', 'La plataforma está estable. Buen trabajo manteniendo la calidad.'];
+      if (v >= 3) return ['⚠️', 'Algunos atajos tomados. Vale la pena vigilarlos en la semana 2.'];
+      return ['🔴', 'La estabilidad es baja. Riesgo de problemas técnicos en la recta final.'];
+    }
+    if (v >= 7) return ['✅', key === 'trust'
+      ? 'Los clientes confían en el trabajo del equipo.'
+      : 'El equipo llega al fin de semana con energía y foco para la semana 2.'];
+    if (v >= 3) return ['⚠️', key === 'trust'
+      ? 'Algo de tensión con los clientes. Actualiza proactivamente.'
+      : 'La moral del equipo está algo tocada. Ojo a las señales de fatiga.'];
+    return ['🔴', key === 'trust'
+      ? 'La confianza de los clientes es baja. La transparencia es crítica.'
+      : 'El equipo ya muestra signos de estrés. Gestiona con mucho cuidado.'];
+  }
+
+  const keys = [
+    ['team',  'Equipo'],
+    ['trust', 'Clientes'],
+    ['debt',  'Estabilidad']
+  ];
+
+  document.getElementById('weekend-assessment').innerHTML = keys.map(([key, label]) => {
+    const [icon, text] = assess(key);
+    return `
+      <div class="weekend-item">
+        <div class="wi-label">${icon} ${label}</div>
+        <div class="wi-text">${text}</div>
+      </div>`;
+  }).join('');
+
+  show('screen-weekend');
+  showGameplayBar();
+}
+
+const LOADING_MSGS = [
+  'Preparando el café...',
+  'Alineando a los ingenieros...',
+  'Dando contexto al equipo...',
+  'Sincronizando expectativas...',
+  'Ignorando el correo del CEO...',
+  'Estimando en story points...',
+  'Moviendo tickets a "En progreso"...',
+  'Reescribiendo los criterios de aceptación...',
+  'Postponiendo la retro...',
+  'Negociando el alcance...',
+  'Buscando el cable del proyector...',
+  'Actualizando el Jira...',
+];
+
+function showSprintStart() {
+  showGameplayBar();
+
+  const btn  = document.getElementById('ss-btn');
+  const msg  = document.getElementById('ss-loading-msg');
+  const fill = document.getElementById('ss-loading-fill');
+  btn.disabled = true;
+  fill.style.width = '0%';
+
+  const msgs = shuffle([...LOADING_MSGS]).slice(0, 3);
+  btn.style.visibility = 'hidden';
+  let i = 0;
+
+  function step() {
+    if (i < msgs.length) {
+      msg.textContent  = '> ' + msgs[i];
+      fill.style.width = ((i + 1) / msgs.length * 100) + '%';
+      i++;
+      setTimeout(step, 750);
+    } else {
+      msg.textContent  = '✓ Sprint listo.';
+      fill.style.width = '100%';
+      fill.style.background = 'var(--green)';
+      btn.disabled = false;
+      btn.style.visibility = 'visible';
+    }
+  }
+
+  show('screen-sprint-start');
+  setTimeout(step, 300);
+}
+
+function beginDay1() {
+  state.day = 1;
+  runDay();
+}
+
+const PROJECT_IMPACT_KEY = { Fix: 'debt', Tech: 'team', Feature: 'trust' };
+const METRIC_ICONS       = { team: '👥', trust: '🤝', debt: '🛡️' };
+
+function getProjectImpact(project, status) {
+  const key      = PROJECT_IMPACT_KEY[project.tag] || 'trust';
+  const delivered = status === 'delivered';
+  const mult     = project.size === 'L' ? (delivered ? 1 : 2) : 1;
+  const sign     = delivered ? 1 : -2;
+  return { [key]: sign * mult };
+}
+
+function applyProjectImpacts() {
+  state.selectedProjects.forEach(id => {
+    const p = PROJECTS.find(p => p.id === id);
+    applyEffects(getProjectImpact(p, state.projectStatus[p.id]));
+  });
+}
+
+function showSprintClose() {
+  resolveProjectStatuses();
+  renderTimeline('sclose-timeline');
+  renderMetrics('sprint-close-metrics');
+  renderSprintBoard('sclose-sprint-board');
+
+  const container = document.getElementById('sclose-impacts');
+  const btn       = document.getElementById('sclose-btn');
+  container.innerHTML = '';
+  btn.disabled = true;
+
+  show('screen-sprint-close');
+
+  const projects = state.selectedProjects
+    .map(id => PROJECTS.find(p => p.id === id))
+    .filter(Boolean);
+  let idx = 0;
+
+  function revealNext() {
+    if (idx >= projects.length) {
+      btn.disabled = false;
+      return;
+    }
+    const p      = projects[idx++];
+    const status = state.projectStatus[p.id];
+    const impact = getProjectImpact(p, status);
+    const [key, val] = Object.entries(impact)[0];
+    const sign = val > 0 ? '+' : '';
+    const cls  = val > 0 ? 'delta-pos' : 'delta-neg';
+    const lbl  = DELIVERY_LABELS[status] || DELIVERY_LABELS.failed;
+
+    const row = document.createElement('div');
+    row.className = 'delivery-row sclose-reveal';
+    row.innerHTML = `
+      <div class="delivery-left">
+        <span class="delivery-name">${p.name}</span>
+      </div>
+      <div class="sclose-impact-right">
+        <span class="delivery-badge ${lbl.cls}">${lbl.text}</span>
+        <span class="${cls} sclose-impact-val">${METRIC_ICONS[key]} ${sign}${val}</span>
+      </div>`;
+    container.appendChild(row);
+    renderMetrics('sprint-close-metrics', false, null, null, impact);
+
+    setTimeout(() => {
+      applyEffects(impact);
+      renderMetrics('sprint-close-metrics', false, null, impact);
+      setTimeout(revealNext, 700);
+    }, 950);
+  }
+
+  setTimeout(revealNext, 600);
+}
+
+function startWeek2() {
+  state.day = 6;
+  runDay();
+}
+
+function resolveProjectStatuses() {
+  PROJECTS.filter(p => state.selectedProjects.includes(p.id)).forEach(p => {
+    state.projectStatus[p.id] = getProjectDeliveryStatus(p.id, true) || 'failed';
+  });
+}
+
+const DELIVERY_LABELS = {
+  delivered: { text: 'Completado',   cls: 'delivered' },
+  failed:    { text: 'No entregado', cls: 'failed'    },
+  null:      { text: 'En progreso',  cls: 'pending'   },
+};
+
+function renderDeliveries(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = state.selectedProjects.map(id => PROJECTS.find(p => p.id === id)).filter(Boolean).map(p => {
+    const s = state.projectStatus[p.id];
+    const lbl = DELIVERY_LABELS[s] || DELIVERY_LABELS.null;
+    return `
+      <div class="delivery-row">
+        <div class="delivery-left">
+          <span class="delivery-name">${p.name}</span>
+        </div>
+        <span class="delivery-badge ${lbl.cls}">${lbl.text}</span>
+      </div>`;
+  }).join('');
+}
+
+function showResults() {
+  const outcome = OUTCOMES.find(o => o.condition(state.metrics)) || OUTCOMES[OUTCOMES.length - 1];
+
+  document.getElementById('r-eyebrow').textContent =
+    `// Sprint Review — Sprint #${state.sprintCount} · Día 10`;
+  document.getElementById('r-icon').textContent    = outcome.icon;
+  document.getElementById('r-title').textContent   = outcome.title;
+  document.getElementById('r-message').textContent = outcome.message;
+  renderMetrics('results-metrics', false);
+  renderDeliveries('results-deliveries');
+
+  const urgent = state.history.filter(h => !h.isNormal);
+  document.getElementById('history-list').innerHTML = urgent.length
+    ? urgent.map(h => `
+        <div class="history-row">
+          <span class="history-day">DÍA ${h.day}</span>
+          <div>
+            <div class="history-scenario">${h.scenario}</div>
+            <div class="history-choice">${h.choice}</div>
+          </div>
+        </div>`).join('')
+    : '<p class="muted" style="padding:12px 0">Sin urgencias este sprint.</p>';
+
+  const metricLabels = { team: '👥 Equipo', trust: '🤝 Clientes', debt: '🛡️ Estabilidad' };
+  document.getElementById('lessons-list').innerHTML =
+    Object.entries(state.metrics)
+      .map(([key, val]) => `<li><strong>${metricLabels[key]}:</strong> ${getMetricFeedback(key, val)}</li>`)
+      .join('');
+
+  document.getElementById('results-footer').innerHTML = `
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="continueNextSprint()">&#9658; SPRINT #${state.sprintCount + 1}</button>
+      <button class="btn btn-ghost" onclick="resetGame()">&#8635; VOLVER A JUGAR</button>
+    </div>`;
+
+  show('screen-results');
+}
+
+function resetGame() { show('screen-title'); }
+
+function toggleSbTooltip(e, el) {
+  e.stopPropagation();
+  const wasOpen = el.classList.contains('expanded');
+  document.querySelectorAll('.sb-item.expanded').forEach(i => i.classList.remove('expanded'));
+  if (!wasOpen) {
+    const rect = el.getBoundingClientRect();
+    const isRight = (rect.left + rect.width / 2) > window.innerWidth / 2;
+    el.classList.add('expanded');
+    el.classList.toggle('tooltip-right', isRight);
+  }
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.sb-item.expanded').forEach(i => i.classList.remove('expanded'));
+});
+document.addEventListener('scroll', () => {
+  document.querySelectorAll('.sb-item.expanded').forEach(i => i.classList.remove('expanded'));
+}, true);
+
+// ── SLACK WIDGET ─────────────────────────────────────────────────
+const SLACK_MESSAGES = [
+  { from: 'Carlos KAM', avatar: '👨‍💻', msg: '¿Cómo vas?' },
+  { from: 'Ana_FE', avatar: '👩‍💻', msg: 'Me dicen de marketing que el cliente quiere algo "tipo Apple"...' },
+  { from: 'Manu_BE', avatar: '🧔', msg: 'He desplegado en prod por error. Todo bien. Creo.' },
+  { from: 'Marta_QA', avatar: '🔍', msg: 'Oye, los criterios de aceptación de la tarea dicen "que funcione". Muy útil...' },
+  { from: '"El CEO"', avatar: '🎣', msg: 'Hola, soy el CEO. Escríbeme por whatsapp, es por un asunto urgente y confidencial.' },
+  { from: 'Pedro_BE', avatar: '👨‍💻', msg: '¿Quién c*** estimó esto en 2 puntos?' },
+  { from: 'Rober_BE', avatar: '🧔', msg: 'El despliegue a producción está planificado para mañana, viernes, a las 18:00' },
+  { from: 'RRHH', avatar: '🙋', msg: 'Nos ha llegado una factura de Anthropic por uso adicional de tokens con tu cuenta, ¿Sabes algo?' },
+  { from: 'Ana_FE', avatar: '👩‍💻', msg: 'Me han dicho que es "un cambio pequeño de UI". Ya veremos.' },
+  { from: 'Marta_QA', avatar: '🔍', msg: 'En local funcionaba.' },
+  { from: 'RRHH', avatar: '🙋', msg: 'Factorial_BOT: Tu solicitud de días de vacaciones ha sido rechazada.' },
+  { from: 'Lucía_PM', avatar: '📊', msg: 'Reunión en 5 min para revisar si necesitamos otra reunión.' },
+  { from: 'Santi_PD', avatar: '🎨', msg: 'Cliente dice que quiere "lo mismo pero diferente". Anotado.' },
+  { from: 'Pedro_BE', avatar: '👨‍💻', msg: 'He refactorizado algo que nadie había tocado en 3 años. Se ha roto todo.' },
+  { from: 'Carlos KAM', avatar: '👨‍💻', msg: 'Oye, le he prmetido a cliente que la plataforma es responssive, ¿Lo es?' },
+  { from: 'Ana_FE', avatar: '👨‍💻', msg: 'En el Titanic los tests también pasaban...' },
+  { from: 'Rober_BE', avatar: '👩‍💻', msg: 'Oye, estoy viendo muchas PR con assertTrue() en los tests...' },
+  { from: 'Carlos KAM', avatar: '👨‍💻', msg: 'Lo bueno es que el cliente ha firmado el proyecto. Lo malo es que ahora hay que hacerlo.' },
+  { from: 'Lucía_PM', avatar: '📊', msg: 'Cuando lleguemos a ese río ya lo cruzaremos.' },
+  { from: 'Pedro_BE', avatar: '👨‍💻', msg: 'Recuerda: estimar es timar.' },
+  { from: 'Lucía_PM', avatar: '📊', msg: 'Cómo vamos a hacer un test A/B si ni siquiera podemos hacer un test A...' },
+  { from: 'Marta_QA', avatar: '🔍', msg: 'Cachea y vencerás.' },
+  { from: 'Rober_BE', avatar: '🧔', msg: 'PR lista pare mergear. No tiene errores... que se sepa.' },
+  { from: 'SENTRY_BOT', avatar: '📣', msg: '77 login attempts in 10 seec.' },
+  { from: 'SENTRY_BOT', avatar: '📣', msg: 'Successfully deployed 3 bugs to PROD.' },
+  { from: 'Carlos KAM', avatar: '👨‍💻', msg: 'Me dijiste que esto lo habías agregado al backlog, pero no lo veo.' },
+  { from: 'Santi_PD', avatar: '🎨', msg: 'No estamos convirtiendo nada... ¿Y si quitamos el botón de "Cancelar"?' },
+];
+
+const SLACK_GAMEPLAY_SCREENS = new Set([
+  'screen-sprint', 'screen-sprint-start', 'screen-day', 'screen-scenario',
+  'screen-consequence', 'screen-weekend', 'screen-sprint-close'
+]);
+
+let slackTimer = null;
+let slackDismissTimer = null;
+let slackActive = false;
+
+function slackStart() {
+  slackActive = true;
+  slackScheduleNext();
+}
+function slackStop() {
+  slackActive = false;
+  if (slackTimer) { clearTimeout(slackTimer); slackTimer = null; }
+  if (slackDismissTimer) { clearTimeout(slackDismissTimer); slackDismissTimer = null; }
+  slackHide();
+}
+function slackScheduleNext() {
+  if (!slackActive) return;
+  const delay = 9000 + Math.random() * 11000;
+  slackTimer = setTimeout(slackShow, delay);
+}
+let _lastSlackIdx = -1;
+function slackShow() {
+  if (!slackActive) return;
+  let idx;
+  do { idx = Math.floor(Math.random() * SLACK_MESSAGES.length); } while (idx === _lastSlackIdx);
+  _lastSlackIdx = idx;
+  const msg = SLACK_MESSAGES[idx];
+  const notif = document.getElementById('slack-notif');
+  notif.querySelector('.slack-notif-avatar').textContent = msg.avatar;
+  notif.querySelector('.slack-notif-name').textContent = msg.from;
+  notif.querySelector('.slack-notif-text').textContent = msg.msg;
+  notif.classList.add('visible');
+  document.getElementById('slack-badge').classList.add('visible');
+  if (slackDismissTimer) clearTimeout(slackDismissTimer);
+  slackDismissTimer = setTimeout(slackHide, 5500);
+}
+function slackHide() {
+  const notif = document.getElementById('slack-notif');
+  notif.classList.remove('visible');
+}
+
+// Hook into show() — called after the original show() is defined
+document._slackShowHook = function(id) {
+  if (SLACK_GAMEPLAY_SCREENS.has(id)) {
+    if (!slackActive) slackStart();
+  } else {
+    slackStop();
+  }
+};
+</script>
+
+<div class="slack-widget" id="slack-widget">
+  <div class="slack-notif" id="slack-notif" onclick="slackHide()">
+    <div class="slack-notif-header"># general &nbsp;·&nbsp; <span>ahora</span></div>
+    <div class="slack-notif-body">
+      <div class="slack-notif-avatar"></div>
+      <div class="slack-notif-content">
+        <div class="slack-notif-name"></div>
+        <div class="slack-notif-text"></div>
+      </div>
+    </div>
+  </div>
+  <div class="slack-icon" onclick="slackHide(); document.getElementById('slack-badge').classList.remove('visible');" title="Slack del equipo">
+    <div class="slack-badge" id="slack-badge"></div>
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523A2.528 2.528 0 0 1 0 15.165a2.527 2.527 0 0 1 2.522-2.52h2.52v2.52zm1.271 0a2.527 2.527 0 0 1 2.521-2.52 2.527 2.527 0 0 1 2.521 2.52v6.313A2.528 2.528 0 0 1 8.834 24a2.528 2.528 0 0 1-2.521-2.522v-6.313z" fill="#E01E5A"/>
+      <path d="M8.834 5.042a2.528 2.528 0 0 1-2.521-2.52A2.528 2.528 0 0 1 8.834 0a2.528 2.528 0 0 1 2.521 2.522v2.52H8.834zm0 1.271a2.528 2.528 0 0 1 2.521 2.521 2.528 2.528 0 0 1-2.521 2.521H2.522A2.528 2.528 0 0 1 0 8.834a2.528 2.528 0 0 1 2.522-2.521h6.312z" fill="#36C5F0"/>
+      <path d="M18.956 8.834a2.528 2.528 0 0 1 2.522-2.521A2.528 2.528 0 0 1 24 8.834a2.528 2.528 0 0 1-2.522 2.521h-2.522V8.834zm-1.271 0a2.528 2.528 0 0 1-2.523 2.521 2.527 2.527 0 0 1-2.52-2.521V2.522A2.527 2.527 0 0 1 15.162 0a2.528 2.528 0 0 1 2.523 2.522v6.312z" fill="#2EB67D"/>
+      <path d="M15.162 18.956a2.528 2.528 0 0 1 2.523 2.522A2.528 2.528 0 0 1 15.162 24a2.527 2.527 0 0 1-2.52-2.522v-2.522h2.52zm0-1.271a2.527 2.527 0 0 1-2.52-2.523 2.526 2.526 0 0 1 2.52-2.52h6.313A2.527 2.527 0 0 1 24 15.162a2.528 2.528 0 0 1-2.525 2.523h-6.313z" fill="#ECB22E"/>
+    </svg>
+  </div>
+</div>
+</body>
+</html>
