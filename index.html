@@ -3611,6 +3611,13 @@ function showSprintStart() {
 
   show('screen-sprint-start');
   showGameplayBar();
+  setTimeout(() => {
+    const bar = document.getElementById('gameplay-bar');
+    if (bar.classList.contains('active') && window.matchMedia('(max-width: 600px)').matches) {
+      document.body.style.paddingTop = bar.offsetHeight + 'px';
+      window.scrollTo({ top: 0 });
+    }
+  }, 100);
   setTimeout(step, 300);
 }
 
