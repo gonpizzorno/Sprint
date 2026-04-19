@@ -3582,8 +3582,6 @@ const LOADING_MSGS = [
 ];
 
 function showSprintStart() {
-  showGameplayBar();
-
   const btn  = document.getElementById('ss-btn');
   const msg  = document.getElementById('ss-loading-msg');
   const fill = document.getElementById('ss-loading-fill');
@@ -3610,6 +3608,7 @@ function showSprintStart() {
   }
 
   show('screen-sprint-start');
+  showGameplayBar();
   setTimeout(step, 300);
 }
 
