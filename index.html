@@ -3797,15 +3797,15 @@ const SLACK_MESSAGES = [
 ];
 
 const SPRINTBOT_ALERTS = [
-  { id: 'team-critical', priority: 1, condition: m => m.team  <= 3, msg: '⚠️ ALERTA: La moral del equipo está en mínimos. Riesgo real de bajas antes del fin del sprint.' },
-  { id: 'trust-critical', priority: 1, condition: m => m.trust <= 3, msg: '⚠️ ALERTA: El cliente está valorando escalar la situación con tu dirección.' },
-  { id: 'debt-critical',  priority: 1, condition: m => m.debt  <= 3, msg: '⚠️ ALERTA: Deuda técnica en nivel crítico. Probabilidad de incidente en producción: alta.' },
-  { id: 'team-low',  priority: 2, condition: m => m.team  <= 5, msg: 'Sprint Health: El equipo muestra señales de fatiga. Considera hacer un check-in hoy.' },
-  { id: 'trust-low', priority: 2, condition: m => m.trust <= 5, msg: 'Sprint Health: El cliente está menos reactivo que de costumbre. Comunicación proactiva recomendada.' },
-  { id: 'debt-low',  priority: 2, condition: m => m.debt  <= 5, msg: 'Sprint Health: El tiempo de resolución de bugs ha subido. La deuda técnica empieza a pasar factura.' },
-  { id: 'team-high',  priority: 3, condition: m => m.team  >= 8, msg: 'Sprint Health: El equipo está en racha. Buen momento para las tareas más complejas del backlog.' },
-  { id: 'trust-high', priority: 3, condition: m => m.trust >= 8, msg: 'Sprint Health: El cliente mencionó el sprint en su All-Hands. Buenas noticias.' },
-  { id: 'debt-high',  priority: 3, condition: m => m.debt  >= 8, msg: 'Sprint Health: La plataforma está sólida. Ratio bug/feature óptimo esta semana.' },
+  { id: 'team-critical', priority: 1, condition: m => m.team  <= 3, msg: '⚠️ El equipo está quemado. Si no pones foco en esto ahora, el riesgo de salidas será cada vez mayor.' },
+  { id: 'trust-critical', priority: 1, condition: m => m.trust <= 3, msg: '⚠️ El cliente ha perdido la confianza. Una más y escalará por encima de ti.' },
+  { id: 'debt-critical',  priority: 1, condition: m => m.debt  <= 3, msg: '⚠️ La plataforma está al límite. El próximo deploy puede ser el que lo rompa todo.' },
+  { id: 'team-low',  priority: 2, condition: m => m.team  <= 5, msg: 'Tu equipo empieza a notar que algo no va bien. Si no actúas pronto, se irá distanciando.' },
+  { id: 'trust-low', priority: 2, condition: m => m.trust <= 5, msg: 'El cliente responde cada vez menos. Necesitas dar señales de vida antes de que deje de confiar en ti.' },
+  { id: 'debt-low',  priority: 2, condition: m => m.debt  <= 5, msg: 'Cada bug tarda más en resolverse. Estás acumulando deuda que alguien tendrá que pagar.' },
+  { id: 'team-high',  priority: 3, condition: m => m.team  >= 8, msg: 'Tu equipo está motivado. Es el momento de meterles las tareas que nadie quiere.' },
+  { id: 'trust-high', priority: 3, condition: m => m.trust >= 8, msg: 'El cliente confía en ti. No lo des por hecho, pero por ahora tienes margen para maniobrar.' },
+  { id: 'debt-high',  priority: 3, condition: m => m.debt  >= 8, msg: 'La plataforma está sólida. Buen trabajo manteniéndola así. Sigue priorizando calidad.' },
 ];
 let _sprintBotShown = new Set();
 
