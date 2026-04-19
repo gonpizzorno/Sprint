@@ -1378,8 +1378,25 @@ body.game-header-active #game-header { display: block; }
 }
 
 /* ── SPRINT LOADING ── */
+#screen-sprint-start {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: var(--bg);
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+#screen-sprint-start.active {
+  display: flex;
+  animation: fadeUp 0.3s ease both;
+}
 .sprint-loading {
-  margin: 20px 0 8px;
+  width: 100%;
+  max-width: 520px;
+  margin: 0 0 16px;
 }
 .sprint-loading-msg {
   font-family: var(--font-mono);
@@ -3611,13 +3628,6 @@ function showSprintStart() {
 
   show('screen-sprint-start');
   showGameplayBar();
-  setTimeout(() => {
-    const bar = document.getElementById('gameplay-bar');
-    if (bar.classList.contains('active') && window.matchMedia('(max-width: 600px)').matches) {
-      document.body.style.paddingTop = bar.offsetHeight + 'px';
-      window.scrollTo({ top: 0 });
-    }
-  }, 100);
   setTimeout(step, 300);
 }
 
