@@ -3504,6 +3504,7 @@ function choose(i) {
     applyEffects(choice.effects);
     showGameplayBar(choice.effects);
     document.getElementById('cs-btn').disabled = false;
+    sprintBotCheck();
   }, 950);
 }
 
@@ -3795,6 +3796,41 @@ const SLACK_MESSAGES = [
   { from: 'Santi_PD', avatar: '🎨', msg: 'No estamos convirtiendo nada... ¿Y si quitamos el botón de "Cancelar"?' },
 ];
 
+const SPRINTBOT_ALERTS = [
+  { id: 'team-critical', priority: 1, condition: m => m.team  <= 3, msg: '⚠️ ALERTA: La moral del equipo está en mínimos. Riesgo real de bajas antes del fin del sprint.' },
+  { id: 'trust-critical', priority: 1, condition: m => m.trust <= 3, msg: '⚠️ ALERTA: El cliente está valorando escalar la situación con tu dirección.' },
+  { id: 'debt-critical',  priority: 1, condition: m => m.debt  <= 3, msg: '⚠️ ALERTA: Deuda técnica en nivel crítico. Probabilidad de incidente en producción: alta.' },
+  { id: 'team-low',  priority: 2, condition: m => m.team  <= 5, msg: 'Sprint Health: El equipo muestra señales de fatiga. Considera hacer un check-in hoy.' },
+  { id: 'trust-low', priority: 2, condition: m => m.trust <= 5, msg: 'Sprint Health: El cliente está menos reactivo que de costumbre. Comunicación proactiva recomendada.' },
+  { id: 'debt-low',  priority: 2, condition: m => m.debt  <= 5, msg: 'Sprint Health: El tiempo de resolución de bugs ha subido. La deuda técnica empieza a pasar factura.' },
+  { id: 'team-high',  priority: 3, condition: m => m.team  >= 8, msg: 'Sprint Health: El equipo está en racha. Buen momento para las tareas más complejas del backlog.' },
+  { id: 'trust-high', priority: 3, condition: m => m.trust >= 8, msg: 'Sprint Health: El cliente mencionó el sprint en su All-Hands. Buenas noticias.' },
+  { id: 'debt-high',  priority: 3, condition: m => m.debt  >= 8, msg: 'Sprint Health: La plataforma está sólida. Ratio bug/feature óptimo esta semana.' },
+];
+let _sprintBotShown = new Set();
+
+function sprintBotCheck() {
+  const m = state.metrics;
+  const alert = SPRINTBOT_ALERTS
+    .filter(a => !_sprintBotShown.has(a.id) && a.condition(m))
+    .sort((a, b) => a.priority - b.priority)[0];
+  if (!alert) return;
+  _sprintBotShown.add(alert.id);
+  setTimeout(() => sprintBotShow(alert.msg), 1800);
+}
+
+function sprintBotShow(msg) {
+  if (!slackActive) return;
+  const notif = document.getElementById('slack-notif');
+  notif.querySelector('.slack-notif-avatar').textContent = '🤖';
+  notif.querySelector('.slack-notif-name').textContent = 'SprintBot';
+  notif.querySelector('.slack-notif-text').textContent = msg;
+  notif.classList.add('visible');
+  document.getElementById('slack-badge').classList.add('visible');
+  if (slackDismissTimer) clearTimeout(slackDismissTimer);
+  slackDismissTimer = setTimeout(slackHide, 7000);
+}
+
 const SLACK_GAMEPLAY_SCREENS = new Set([
   'screen-sprint', 'screen-sprint-start', 'screen-day', 'screen-scenario',
   'screen-consequence', 'screen-weekend', 'screen-sprint-close'
@@ -3806,6 +3842,7 @@ let slackActive = false;
 
 function slackStart() {
   slackActive = true;
+  _sprintBotShown.clear();
   slackScheduleNext();
 }
 function slackStop() {
