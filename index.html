@@ -3834,6 +3834,7 @@ function slackShow() {
   document.getElementById('slack-badge').classList.add('visible');
   if (slackDismissTimer) clearTimeout(slackDismissTimer);
   slackDismissTimer = setTimeout(slackHide, 5500);
+  slackScheduleNext();
 }
 function slackHide() {
   const notif = document.getElementById('slack-notif');
