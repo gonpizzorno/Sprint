@@ -1634,29 +1634,28 @@ body.game-header-active #game-header { display: block; }
 .project-card {
   background: var(--surface);
   border: 2px solid transparent;
-  padding: 14px 16px;
-  cursor: pointer;
   box-shadow: 3px 3px 0 rgba(0,0,0,0.5);
-  transition: border-color 0.1s, background 0.1s, box-shadow 0.06s, transform 0.06s;
+  transition: border-color 0.1s, background 0.1s, box-shadow 0.06s;
   text-align: left;
-  width: 100%;
   font-family: inherit;
   color: var(--text);
   border-radius: 10px;
+  overflow: hidden;
 }
-.project-card:hover {
-  background: #0c3848;
-}
-.project-card:active { transform: translate(2px,2px); box-shadow: 1px 1px 0 rgba(0,0,0,0.5); }
 .project-card.selected {
   background: var(--surface2);
   box-shadow: 3px 3px 0 rgba(3,60,70,0.5);
 }
-.project-card.disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-  pointer-events: none;
+.project-card-header {
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
 }
+.project-card-header:hover {
+  background: rgba(255,255,255,0.04);
+}
+.project-card-header:active { opacity: 0.75; }
 .project-card-top {
   display: flex;
   align-items: center;
@@ -1669,21 +1668,59 @@ body.game-header-active #game-header { display: block; }
   color: var(--bright);
   line-height: 1.4;
 }
+.project-card-chevron {
+  font-size: 0.55rem;
+  color: var(--muted);
+  margin-top: 6px;
+  text-align: right;
+  letter-spacing: 0;
+  transition: transform 0.2s ease;
+}
+.project-card-chevron.open {
+  transform: rotate(180deg);
+}
+.project-card-body {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.25s ease, opacity 0.2s ease;
+}
+.project-card-body.open {
+  max-height: 12em;
+  opacity: 1;
+}
 .project-card-desc {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   color: var(--muted);
   line-height: 1.5;
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  margin-top: 0;
-  transition: max-height 0.2s ease, opacity 0.2s ease, margin-top 0.2s ease;
+  padding: 0 16px 10px;
 }
-.project-card:hover .project-card-desc {
-  max-height: 5em;
-  opacity: 1;
-  margin-top: 6px;
+.btn-add-project {
+  display: block;
+  width: calc(100% - 32px);
+  margin: 0 16px 14px;
+  padding: 9px 8px;
+  background: var(--accent);
+  color: #000;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-weight: bold;
+  transition: opacity 0.1s;
+}
+.btn-add-project.added {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+.btn-add-project:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
 }
 @media (max-width: 600px) {
   .project-select-grid { grid-template-columns: 1fr; }
@@ -3233,6 +3270,7 @@ function switchTab(btn, id) {
 
 let tutStep = 1;
 const TUT_TOTAL = 4;
+let expandedProjectId = null;
 
 function showTutorial() {
   initState();
@@ -3288,6 +3326,7 @@ function showProjectSelect() {
     ? [...available]
     : shuffle([...available]).slice(0, 6);
   state.selectedProjects = [];
+  expandedProjectId = null;
 
   renderProjectSelectGrid();
   renderSprintBoard('ps-sprint-board', true);
@@ -3301,17 +3340,32 @@ function renderProjectSelectGrid() {
   grid.innerHTML = projects.map(p => {
     const isSelected = state.selectedProjects.includes(p.id);
     const isDisabled = !isSelected && sprintPoints() + SIZE_POINTS[p.size] > SPRINT_CAPACITY;
-    const cls = isSelected ? ' selected' : isDisabled ? ' disabled' : '';
+    const isExpanded = expandedProjectId === p.id;
+    const cardCls = isSelected ? ' selected' : '';
+    const btnDisabled = isDisabled ? ' disabled' : '';
+    const btnCls = isSelected ? ' added' : '';
+    const btnLabel = isSelected ? '✓ QUITAR DEL SPRINT' : '+ AÑADIR AL SPRINT';
     return `
-      <button class="project-card${cls}" onclick="toggleProject('${p.id}')">
-        <div class="project-card-top">
-          <span class="tag ${p.tagClass}">${p.tag}</span>
-          <span class="sb-item-size">${p.size} · ${SIZE_POINTS[p.size]}pts</span>
+      <div class="project-card${cardCls}">
+        <div class="project-card-header" onclick="toggleExpand('${p.id}')">
+          <div class="project-card-top">
+            <span class="tag ${p.tagClass}">${p.tag}</span>
+            <span class="sb-item-size">${p.size} · ${SIZE_POINTS[p.size]}pts</span>
+          </div>
+          <div class="project-card-name">${p.name}</div>
+          <div class="project-card-chevron${isExpanded ? ' open' : ''}">▼</div>
         </div>
-        <div class="project-card-name">${p.name}</div>
-        <div class="project-card-desc">${p.desc}</div>
-      </button>`;
+        <div class="project-card-body${isExpanded ? ' open' : ''}">
+          <div class="project-card-desc">${p.desc}</div>
+          <button class="btn-add-project${btnCls}"${btnDisabled} onclick="toggleProject('${p.id}')">${btnLabel}</button>
+        </div>
+      </div>`;
   }).join('');
+}
+
+function toggleExpand(id) {
+  expandedProjectId = expandedProjectId === id ? null : id;
+  renderProjectSelectGrid();
 }
 
 function toggleProject(id) {
@@ -3322,21 +3376,9 @@ function toggleProject(id) {
     if (sprintPoints() + SIZE_POINTS[p.size] > SPRINT_CAPACITY) return;
     state.selectedProjects.push(id);
   }
-  updateProjectCardClasses();
+  renderProjectSelectGrid();
   renderSprintBoard('ps-sprint-board', true);
   updateSelectCounter();
-}
-
-function updateProjectCardClasses() {
-  const projects = PROJECTS.filter(p => state.shownProjects.includes(p.id));
-  projects.forEach(p => {
-    const btn = document.querySelector(`#project-select-grid .project-card[onclick="toggleProject('${p.id}')"]`);
-    if (!btn) return;
-    const isSelected = state.selectedProjects.includes(p.id);
-    const isDisabled = !isSelected && sprintPoints() + SIZE_POINTS[p.size] > SPRINT_CAPACITY;
-    btn.classList.toggle('selected', isSelected);
-    btn.classList.toggle('disabled', isDisabled);
-  });
 }
 
 function updateSelectCounter() {
