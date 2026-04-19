@@ -1720,7 +1720,7 @@ body.game-header-active #game-header { display: block; }
   border-left: 3px solid #4A154B;
   border-radius: 6px;
   padding: 10px 12px;
-  pointer-events: all;
+  pointer-events: none;
   box-shadow: 0 4px 20px rgba(0,0,0,0.6);
   opacity: 0;
   transform: translateY(12px);
@@ -1730,6 +1730,7 @@ body.game-header-active #game-header { display: block; }
 .slack-notif.visible {
   opacity: 1;
   transform: translateY(0);
+  pointer-events: all;
 }
 .slack-notif-header {
   font-family: var(--font-mono);
