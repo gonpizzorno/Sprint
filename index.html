@@ -3910,25 +3910,30 @@ document._slackShowHook = function(id) {
   const LOOKAHEAD = 0.12;
   const SCHED_MS  = 50;
 
-  // Frequencies
-  const B2  = 123.47, Fs2 = 92.50;
-  const Cs3 = 138.59, Ds3 = 155.56, Fs3 = 185.00, As3 = 233.08, B3 = 246.94;
+  // Frequencies — section A: Bm, section B: G major
+  const B2=123.47, Fs2=92.50, G2=98.00, D3=146.83;
+  const Cs3=138.59, Ds3=155.56, E3=164.81, Fs3=185.00, G3=196.00;
+  const A3=220.00, As3=233.08, B3=246.94, D4=293.66;
 
-  // 32-step loop (2 cycles). setcpm(100/4) → each cycle = 16 steps
-  // Bass: [B F# B -] × 2 (triangle)
-  const BAS = new Array(32).fill(0);
-  BAS[0]=B2; BAS[4]=Fs2; BAS[8]=B2;          // cycle 1
-  BAS[16]=B2; BAS[20]=Fs2; BAS[24]=B2;       // cycle 2
+  // 64-step loop: A (Bm, steps 0-31) + B (G major, steps 32-63)
+  // Bass (triangle): [B F#2 B -] en A, [G D3 G -] en B
+  const BAS = new Array(64).fill(0);
+  BAS[0]=B2;  BAS[4]=Fs2; BAS[8]=B2;   // A cycle 1
+  BAS[16]=B2; BAS[20]=Fs2; BAS[24]=B2; // A cycle 2
+  BAS[32]=G2; BAS[36]=D3; BAS[40]=G2;  // B cycle 1
+  BAS[48]=G2; BAS[52]=D3; BAS[56]=G2;  // B cycle 2
 
-  // Response: [- - - - - - - - - - D#3 B3 A#3 - F#3 -] / [... C#3 ...]  (square)
-  const MEL = new Array(32).fill(0);
-  MEL[10]=Ds3; MEL[11]=B3; MEL[12]=As3; MEL[14]=Fs3;  // cycle 1
-  MEL[26]=Cs3; MEL[27]=B3; MEL[28]=As3; MEL[30]=Fs3;  // cycle 2
+  // Melody (square): respuesta original en A, variación ascendente en B
+  const MEL = new Array(64).fill(0);
+  MEL[10]=Ds3; MEL[11]=B3;  MEL[12]=As3; MEL[14]=Fs3; // A cycle 1
+  MEL[26]=Cs3; MEL[27]=B3;  MEL[28]=As3; MEL[30]=Fs3; // A cycle 2
+  MEL[42]=G3;  MEL[43]=E3;  MEL[44]=D4;  MEL[46]=B3;  // B cycle 1
+  MEL[58]=A3;  MEL[59]=G3;  MEL[60]=E3;  MEL[62]=D4;  // B cycle 2
 
-  // Drums: bd sd bd sd / bd*2 sd bd -
-  const KICK  = new Set([0, 8, 16, 18, 24]);
-  const SNARE = new Set([4, 12, 20]);
-  const HIHAT = new Set([0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30]);
+  // Drums: patrón base + fill de snare en la transición de sección (steps 28-30, 60-62)
+  const KICK  = new Set([0,8,16,18,24, 32,40,48,50,56]);
+  const SNARE = new Set([4,12,20, 28,30, 36,44,52, 60,62]);
+  const HIHAT = new Set(Array.from({length:64},(_,i)=>i).filter(i=>i%2===0));
 
   let ctx = null, master = null, step = 0, nextTime = 0, timer = null;
   let muted = false, started = false;
@@ -3990,7 +3995,7 @@ document._slackShowHook = function(id) {
 
   function schedule() {
     while (nextTime < ctx.currentTime + LOOKAHEAD) {
-      const i = step % 32;
+      const i = step % 64;
       if (MEL[i]) note(MEL[i], 'square',   nextTime, S * 0.7,  0.12);
       if (BAS[i]) note(BAS[i], 'triangle', nextTime, S * 3.8,  0.16);
       if (KICK.has(i))  kick(nextTime);
