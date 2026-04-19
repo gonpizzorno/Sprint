@@ -4013,19 +4013,24 @@ document._slackShowHook = function(id) {
     master = ctx.createGain();
     master.gain.value = 0.5;
     master.connect(ctx.destination);
-    nextTime = ctx.currentTime + 0.05;
-    schedule();
-    timer = setInterval(schedule, SCHED_MS);
+    ctx.resume().then(() => {
+      nextTime = ctx.currentTime + 0.05;
+      schedule();
+      timer = setInterval(schedule, SCHED_MS);
+    });
   }
 
-  function firstClick() {
-    document.removeEventListener('click', firstClick);
-    start();
+  // Resume suspended context on any tap (required by iOS)
+  function onInteraction() {
+    if (!started) { start(); return; }
+    if (ctx && ctx.state === 'suspended') ctx.resume();
   }
-  document.addEventListener('click', firstClick);
+  document.addEventListener('click',      onInteraction);
+  document.addEventListener('touchstart', onInteraction, { passive: true });
 
   window.musicToggle = function() {
     if (!started) start();
+    if (ctx && ctx.state === 'suspended') ctx.resume();
     muted = !muted;
     if (master) master.gain.value = muted ? 0 : 0.5;
     document.getElementById('music-btn').textContent = muted ? '🔇' : '🎵';
