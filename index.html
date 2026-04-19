@@ -3905,32 +3905,30 @@ document._slackShowHook = function(id) {
 
 // ── CHIPTUNE ENGINE ──────────────────────────────────────────────
 (function() {
-  const BPM = 140;
-  const S = (60 / BPM) / 4; // 16th note in seconds
+  const BPM = 100;
+  const S = (60 / BPM) / 4; // 16th note = 0.15s
   const LOOKAHEAD = 0.12;
   const SCHED_MS  = 50;
 
-  const F = {
-    A2:110.00, C3:130.81, E3:164.81, F3:174.61, G3:196.00,
-    A3:220.00, C4:261.63, E4:329.63,
-    A4:440.00, C5:523.25, D5:587.33, E5:659.25, F5:698.46,
-    G5:783.99, A5:880.00
-  };
+  // Frequencies
+  const B2  = 123.47, Fs2 = 92.50;
+  const Cs3 = 138.59, Ds3 = 155.56, Fs3 = 185.00, As3 = 233.08, B3 = 246.94;
 
-  // 64-step loop (4 bars). Melody = square, Bass = triangle
-  // Progression: Am – F – C – Am
-  const MEL = [
-    F.E5,0,F.C5,0, F.A4,0,F.E5,0, F.G3,0,F.A4,0, F.C5,0,F.E5,0,
-    F.F5,0,F.E5,0, F.D5,0,F.C5,0, F.A4,0,0,0,     F.A4,0,F.C5,0,
-    F.E5,0,F.G5,0, F.E5,0,F.C5,0, F.D5,0,F.C5,0,  F.A4,0,F.G3,0,
-    F.A4,0,F.C5,0, F.E5,0,F.A5,0, F.G5,0,F.E5,0,  F.D5,0,F.E5,0,
-  ];
-  const BAS = [
-    F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0,
-    F.F3,0,0,0, F.F3,0,0,0, F.F3,0,0,0, F.F3,0,0,0,
-    F.C3,0,0,0, F.C3,0,0,0, F.C3,0,0,0, F.C3,0,0,0,
-    F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0,
-  ];
+  // 32-step loop (2 cycles). setcpm(100/4) → each cycle = 16 steps
+  // Bass: [B F# B -] × 2 (triangle)
+  const BAS = new Array(32).fill(0);
+  BAS[0]=B2; BAS[4]=Fs2; BAS[8]=B2;          // cycle 1
+  BAS[16]=B2; BAS[20]=Fs2; BAS[24]=B2;       // cycle 2
+
+  // Response: [- - - - - - - - - - D#3 B3 A#3 - F#3 -] / [... C#3 ...]  (square)
+  const MEL = new Array(32).fill(0);
+  MEL[10]=Ds3; MEL[11]=B3; MEL[12]=As3; MEL[14]=Fs3;  // cycle 1
+  MEL[26]=Cs3; MEL[27]=B3; MEL[28]=As3; MEL[30]=Fs3;  // cycle 2
+
+  // Drums: bd sd bd sd / bd*2 sd bd -
+  const KICK  = new Set([0, 8, 16, 18, 24]);
+  const SNARE = new Set([4, 12, 20]);
+  const HIHAT = new Set([0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30]);
 
   let ctx = null, master = null, step = 0, nextTime = 0, timer = null;
   let muted = false, started = false;
@@ -3948,11 +3946,56 @@ document._slackShowHook = function(id) {
     osc.start(t); osc.stop(t + dur);
   }
 
+  function kick(t) {
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(master);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(110, t);
+    osc.frequency.exponentialRampToValueAtTime(40, t + 0.08);
+    g.gain.setValueAtTime(0.55, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+    osc.start(t); osc.stop(t + 0.14);
+  }
+
+  function snare(t) {
+    const buf  = ctx.createBuffer(1, ctx.sampleRate * 0.1, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    const hp  = ctx.createBiquadFilter();
+    const g   = ctx.createGain();
+    src.buffer = buf;
+    src.connect(hp); hp.connect(g); g.connect(master);
+    hp.type = 'highpass'; hp.frequency.value = 1800;
+    g.gain.setValueAtTime(0.22, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.1);
+    src.start(t); src.stop(t + 0.1);
+  }
+
+  function hihat(t) {
+    const buf  = ctx.createBuffer(1, ctx.sampleRate * 0.03, ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource();
+    const hp  = ctx.createBiquadFilter();
+    const g   = ctx.createGain();
+    src.buffer = buf;
+    src.connect(hp); hp.connect(g); g.connect(master);
+    hp.type = 'highpass'; hp.frequency.value = 8000;
+    g.gain.setValueAtTime(0.08, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.03);
+    src.start(t); src.stop(t + 0.03);
+  }
+
   function schedule() {
     while (nextTime < ctx.currentTime + LOOKAHEAD) {
-      const i = step % 64;
-      if (MEL[i]) note(MEL[i], 'square',   nextTime, S * 0.75, 0.10);
-      if (BAS[i]) note(BAS[i], 'triangle', nextTime, S * 3.85, 0.14);
+      const i = step % 32;
+      if (MEL[i]) note(MEL[i], 'square',   nextTime, S * 0.7,  0.12);
+      if (BAS[i]) note(BAS[i], 'triangle', nextTime, S * 3.8,  0.16);
+      if (KICK.has(i))  kick(nextTime);
+      if (SNARE.has(i)) snare(nextTime);
+      if (HIHAT.has(i)) hihat(nextTime);
       nextTime += S;
       step++;
     }
