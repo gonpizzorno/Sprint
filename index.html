@@ -3888,7 +3888,7 @@ function slackStop() {
 }
 function slackScheduleNext() {
   if (!slackActive) return;
-  const delay = 9000 + Math.random() * 11000;
+  const delay = 20000 + Math.random() * 20000;
   slackTimer = setTimeout(slackShow, delay);
 }
 let _lastSlackIdx = -1;
@@ -3905,7 +3905,7 @@ function slackShow() {
   notif.classList.add('visible');
   document.getElementById('slack-badge').classList.add('visible');
   if (slackDismissTimer) clearTimeout(slackDismissTimer);
-  slackDismissTimer = setTimeout(slackHide, 5500);
+  slackDismissTimer = setTimeout(slackHide, 9000);
   slackScheduleNext();
 }
 function slackHide() {
