@@ -1768,12 +1768,29 @@ body.game-header-active #game-header { display: block; }
   line-height: 1.4;
   word-break: break-word;
 }
+/* ── MUSIC BUTTON ── */
+#music-btn {
+  position: fixed;
+  bottom: 10px;
+  left: 20px;
+  background: none;
+  border: none;
+  font-size: 1rem;
+  cursor: pointer;
+  opacity: 0.45;
+  z-index: 100;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: opacity 0.15s;
+}
+#music-btn:hover { opacity: 1; }
 </style>
 </head>
 <body>
 <div class="game-logo">Sprint<span class="accent">!</span><span class="blink">_</span></div>
 <div class="sprint-counter" id="sprint-counter"></div>
 <div class="game-copyright">© 2026 @gonpizzorno</div>
+<button id="music-btn" title="Música" onclick="musicToggle()">🎵</button>
 <div id="gameplay-bar" class="gameplay-bar">
   <div id="gb-timeline" class="sprint-timeline"></div>
   <div id="gb-metrics" class="metrics-grid"></div>
@@ -3886,6 +3903,87 @@ document._slackShowHook = function(id) {
     slackStop();
   }
 };
+
+// ── CHIPTUNE ENGINE ──────────────────────────────────────────────
+(function() {
+  const BPM = 140;
+  const S = (60 / BPM) / 4; // 16th note in seconds
+  const LOOKAHEAD = 0.12;
+  const SCHED_MS  = 50;
+
+  const F = {
+    A2:110.00, C3:130.81, E3:164.81, F3:174.61, G3:196.00,
+    A3:220.00, C4:261.63, E4:329.63,
+    A4:440.00, C5:523.25, D5:587.33, E5:659.25, F5:698.46,
+    G5:783.99, A5:880.00
+  };
+
+  // 64-step loop (4 bars). Melody = square, Bass = triangle
+  // Progression: Am – F – C – Am
+  const MEL = [
+    F.E5,0,F.C5,0, F.A4,0,F.E5,0, F.G3,0,F.A4,0, F.C5,0,F.E5,0,
+    F.F5,0,F.E5,0, F.D5,0,F.C5,0, F.A4,0,0,0,     F.A4,0,F.C5,0,
+    F.E5,0,F.G5,0, F.E5,0,F.C5,0, F.D5,0,F.C5,0,  F.A4,0,F.G3,0,
+    F.A4,0,F.C5,0, F.E5,0,F.A5,0, F.G5,0,F.E5,0,  F.D5,0,F.E5,0,
+  ];
+  const BAS = [
+    F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0,
+    F.F3,0,0,0, F.F3,0,0,0, F.F3,0,0,0, F.F3,0,0,0,
+    F.C3,0,0,0, F.C3,0,0,0, F.C3,0,0,0, F.C3,0,0,0,
+    F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0, F.A2,0,0,0,
+  ];
+
+  let ctx = null, master = null, step = 0, nextTime = 0, timer = null;
+  let muted = false, started = false;
+
+  function note(freq, type, t, dur, vol) {
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    osc.connect(g); g.connect(master);
+    osc.type = type;
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol, t + 0.008);
+    g.gain.setValueAtTime(vol, t + dur - 0.02);
+    g.gain.linearRampToValueAtTime(0, t + dur);
+    osc.start(t); osc.stop(t + dur);
+  }
+
+  function schedule() {
+    while (nextTime < ctx.currentTime + LOOKAHEAD) {
+      const i = step % 64;
+      if (MEL[i]) note(MEL[i], 'square',   nextTime, S * 0.75, 0.10);
+      if (BAS[i]) note(BAS[i], 'triangle', nextTime, S * 3.85, 0.14);
+      nextTime += S;
+      step++;
+    }
+  }
+
+  function start() {
+    if (started) return;
+    started = true;
+    ctx    = new (window.AudioContext || window.webkitAudioContext)();
+    master = ctx.createGain();
+    master.gain.value = 0.5;
+    master.connect(ctx.destination);
+    nextTime = ctx.currentTime + 0.05;
+    schedule();
+    timer = setInterval(schedule, SCHED_MS);
+  }
+
+  function firstClick() {
+    document.removeEventListener('click', firstClick);
+    start();
+  }
+  document.addEventListener('click', firstClick);
+
+  window.musicToggle = function() {
+    if (!started) start();
+    muted = !muted;
+    if (master) master.gain.value = muted ? 0 : 0.5;
+    document.getElementById('music-btn').textContent = muted ? '🔇' : '🎵';
+  };
+})();
 </script>
 
 <div class="slack-widget" id="slack-widget">
