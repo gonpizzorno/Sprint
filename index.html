@@ -1669,12 +1669,18 @@ body.game-header-active #game-header { display: block; }
   line-height: 1.4;
 }
 .project-card-chevron {
-  font-size: 0.55rem;
-  color: var(--muted);
-  margin-top: 6px;
-  text-align: right;
-  letter-spacing: 0;
-  transition: transform 0.2s ease;
+  display: none;
+}
+@media (max-width: 600px) {
+  .project-card-chevron {
+    display: block;
+    font-size: 0.55rem;
+    color: var(--muted);
+    margin-top: 6px;
+    text-align: right;
+    letter-spacing: 0;
+    transition: transform 0.2s ease;
+  }
 }
 .project-card-chevron.open {
   transform: rotate(180deg);
@@ -3364,8 +3370,12 @@ function renderProjectSelectGrid() {
 }
 
 function toggleExpand(id) {
-  expandedProjectId = expandedProjectId === id ? null : id;
-  renderProjectSelectGrid();
+  if (window.innerWidth > 600) {
+    toggleProject(id);
+  } else {
+    expandedProjectId = expandedProjectId === id ? null : id;
+    renderProjectSelectGrid();
+  }
 }
 
 function toggleProject(id) {
@@ -3716,7 +3726,12 @@ function showSprintClose() {
 
   function revealNext() {
     if (idx >= projects.length) {
-      btn.disabled = false;
+      const go = checkGameOver();
+      if (go) {
+        setTimeout(() => showGameOver(go), 600);
+      } else {
+        btn.disabled = false;
+      }
       return;
     }
     const p      = projects[idx++];
